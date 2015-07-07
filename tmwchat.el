@@ -806,6 +806,7 @@
 
 (defun tmwchat-readin ()
   "Read message and return it"
+  (goto-char (buffer-end 1))
   (buffer-substring tmwchat--start-point (point)))
 
 (defun tmwchat--parse-msg (msg)
@@ -853,7 +854,8 @@
     (goto-char tmwchat--start-point)
     (insert msg)
     (insert "\n")
-    (add-text-properties tmwchat--start-point (- (point) 1)
+    (add-text-properties (- tmwchat--start-point 1)
+			 (- (point) 1)
     			 '(read-only t))
     (setq tmwchat--start-point (point)))
     
