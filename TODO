@@ -1,3 +1,4 @@
 
 * Batch mode
 * Support for few "active" commands (/sit, /move etc)
+* Chat logs

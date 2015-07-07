@@ -86,6 +86,7 @@
 
 (defvar tmwchat--beings (make-hash-table :test 'equal))
 (make-variable-buffer-local 'tmwchat--beings)
+(setq tmwchat--client-process nil)
 
 ;;----------------------------------------------------------------------
 (defconst tmwchat--u16-spec
@@ -539,7 +540,7 @@
   (let ((id (bindat-get-field info 'id))
 	(name (bindat-get-field info 'name)))
     (puthash id name tmwchat--beings)
-    (tmwchat-log (format "%s pops out" name))
+    ;; (tmwchat-log (format "%s pops out" name))
     (when (equal id tmwchat--late-id)
       (setq tmwchat--late-id nil)
       (when (tmwchat--notify-filter msg)
@@ -555,8 +556,8 @@
   (let ((id (bindat-get-field info 'id))
 	(dead-flag (bindat-get-field info 'dead-flag)))
     (unless (= dead-flag 1)
-      (when (being-name id)
-	(tmwchat-log (format "%s is gone" (being-name id))))
+      ;; (when (being-name id)
+      ;; 	(tmwchat-log (format "%s is gone" (being-name id))))
       (remhash id tmwchat--beings))))
 
 (defconst tmwchat--being-name-request-spec
@@ -743,7 +744,7 @@
 
 (defun make-tmwchat-variables ()
   (set (make-local-variable 'tmwchat--start-point) (point))
-  (set (make-local-variable 'tmwchat--client-process) nil)
+  ;; (set (make-local-variable 'tmwchat--client-process) nil)
   (set (make-local-variable 'tmwchat--tmwa-version) 0)
   (set (make-local-variable 'tmwchat--tmwa-options) nil)
   (set (make-local-variable 'tmwchat--update-host) nil)
