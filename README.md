@@ -57,6 +57,8 @@ chatting with your Mana-friends. There are few built-in commands
 /disconnect -- disconnect from TMW server.
 /w NickName message>
 /w "NickName with spaces" message -- send a personal message to NickName
+/ some_message -- send a whisper to the last person who you whispered to.
+               -- it doesn't work if you didn't whisper to anyone yet.
 /emote <number> -- show emote (check source code for possible emote codes)
 /beings -- list players that are near you
 /online -- show online players list
