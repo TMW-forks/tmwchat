@@ -760,6 +760,7 @@
   (set (make-local-variable 'tmwchat--late-id) nil)
   (set (make-local-variable 'tmwchat--late-msg) "")
   (set (make-local-variable 'tmwchat-sent) nil)
+  (set (make-local-variable 'tmwchat--last-whisper-nick) "")
   (set (make-local-variable 'tmwchat--ping-timer) nil)
   (mapc (lambda (f)
 	  (make-variable-buffer-local (nth 2 f)))
@@ -819,7 +820,12 @@
     (let* ((parsed (tmwchat--parse-msg (substring tmwchat-sent 3)))
 	   (nick (car parsed))
 	   (msg (cdr parsed)))
+      (setq tmwchat--last-whisper-nick nick)
       (whisper-message nick msg)))
+   ((string-prefix-p "/ " tmwchat-sent)
+    (whisper-message
+     tmwchat--last-whisper-nick
+     (substring tmwchat-sent 2)))
    (t
     (when (processp tmwchat--client-process)
       (delete-region tmwchat--start-point (point))
