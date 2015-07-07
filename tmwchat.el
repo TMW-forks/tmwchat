@@ -515,10 +515,11 @@
 	      (bindat-get-field info 'msg)
 	      'utf-8)))
     (if (gethash id tmwchat--beings)
-	(let ((sender (being-name id)))
-	  (when (tmwchat--notify-filter msg)
-	    (tmwchat--notify sender msg))
-	  (tmwchat-log (format "%s: %s" sender msg)))
+	(let ((sender (being-name id))
+	      (msg2 (tmwchat--remove-color msg)))
+	  (when (tmwchat--notify-filter msg2)
+	    (tmwchat--notify sender msg2))
+	  (tmwchat-log (format "%s: %s" sender msg2)))
       (progn
 	(setq tmwchat--late-id id
 	      tmwchat--late-msg msg)
@@ -543,9 +544,10 @@
     ;; (tmwchat-log (format "%s pops out" name))
     (when (equal id tmwchat--late-id)
       (setq tmwchat--late-id nil)
-      (when (tmwchat--notify-filter msg)
-	(tmwchat--notify name msg))
-      (tmwchat-log (format "%s: %s" name tmwchat--late-msg)))))
+      (let ((msg (tmwchat--remove-color tmwchat--late-msg)))
+	(when (tmwchat--notify-filter msg)
+	  (tmwchat--notify name msg))
+	(tmwchat-log (format "%s: %s" name msg))))))
 
 (defun being-visible (info)
   (let ((id (bindat-get-field info 'id))
@@ -701,7 +703,9 @@
 
 (defun whisper (info)
   (let ((nick (bindat-get-field info 'nick))
-	(msg (decode-coding-string (bindat-get-field info 'msg) 'utf-8)))
+	(msg
+	 (tmwchat--remove-color
+	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
     (tmwchat--notify nick msg)
     (tmwchat-log (format "%s whispers: %s" nick msg))))
 
@@ -730,13 +734,25 @@
       (play-sound-file sound))))
     ;; (notifications-notify :title title
     ;; 			  :body text
-    ;; 			  :timeout 5000)))
+;; 			  :timeout 5000)))
+
+(defun tmwchat--remove-color (str)
+  (while (string-match "##[0-9]" str)
+    (setq str (replace-match "" nil nil str)))
+  str)
 
 ;;====================================================================
 (defvar tmwchat-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\r" 'tmwchat-read-print)
+    (define-key map "\d" 'tmwchat--backspace)
     map))
+
+(defun tmwchat--backspace ()
+  (interactive)
+  ;; (message "tmwchat--backspace")
+  (unless (equal (point) tmwchat--start-point)
+    (backward-delete-char 1)))
 
 (define-derived-mode tmwchat-mode text-mode "TMWChat"
   "Major mode for TMW chat."
@@ -837,6 +853,8 @@
     (goto-char tmwchat--start-point)
     (insert msg)
     (insert "\n")
+    (add-text-properties tmwchat--start-point (- (point) 1)
+    			 '(read-only t))
     (setq tmwchat--start-point (point)))
     
   (when (processp (get-process "tmwchat"))
