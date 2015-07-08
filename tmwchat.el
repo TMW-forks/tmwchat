@@ -450,6 +450,7 @@
     (set-process-filter process 'tmwchat--mapserv-filter-function)
     (set-process-sentinel process 'tmwchat--mapserv-sentinel-function)
     (setq tmwchat--ping-timer (run-at-time 15 15 'tmwchat--ping))
+    (setq tmwchat--fetch-online-list-timer (run-at-time 5 30 'tmwchat--online-list))
     (process-send-string
      process
      (bindat-pack tmwchat--connect-mapserv-spec
@@ -606,14 +607,30 @@
 		      (list (cons 'opcode #x94)
 			    (cons 'id tmwchat--char-id))))))))
 
+(setq tmwchat-online-users nil)
+
 (defun tmwchat-online-list ()
-  (tmwchat-log
-  (with-current-buffer
-      (url-retrieve-synchronously "http://server.themanaworld.org/online.txt")
-    (prog1
-	(buffer-string)
-      (kill-buffer)))))
-   
+  (defun chomp-end (str)
+    (when (string-suffix-p "(GM) " str)
+      (setq str (substring str 0 -5)))
+    (replace-regexp-in-string (rx (* (any " \t\n")) eos)
+			      ""
+			      str))
+  (defun gen-list (str)
+    (let* ((m (string-match "------------------------------" str))
+	   (end (+ (match-end 0) 1))
+	   (strm (substring str end))
+	   (m2 (string-match "\n\n" strm))
+	   (start (match-beginning 0))
+	   (strmm (substring strm 0 start)))
+      (mapcar 'chomp-end (split-string strmm "\n"))))
+  (defun callback (status)
+    (let ((data (buffer-string)))
+      (setq tmwchat-online-users (gen-list data))
+      (kill-buffer (current-buffer))))
+  (let ((url "http://server.themanaworld.org/online.txt"))
+    (url-retrieve url 'callback nil t t)))
+
 (defconst tmwchat--show-emote-spec
   '((opcode      u16r)   ;; #xbf
     (id          u8)))
@@ -778,6 +795,7 @@
   (set (make-local-variable 'tmwchat--late-id) nil)
   (set (make-local-variable 'tmwchat--late-msg) "")
   (set (make-local-variable 'tmwchat-sent) nil)
+  (set (make-local-variable 'tmwchat--fetch-online-list-timer) nil)
   (set (make-local-variable 'tmwchat--last-whisper-nick) "")
   (set (make-local-variable 'tmwchat--ping-timer) nil)
   (mapc (lambda (f)
@@ -828,7 +846,7 @@
    ((equal tmwchat-sent "/connect")
     (tmwchat-start-client tmwchat-server-host tmwchat-server-port))
    ((equal tmwchat-sent "/online")
-    (tmwchat-online-list))
+    (tmwchat-log (format "%s" tmwchat-online-users)))
    ((equal tmwchat-sent "/disconnect")
     (tmwchat-stop-client))
    ((equal tmwchat-sent "/beings")
