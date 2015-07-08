@@ -153,7 +153,7 @@
       (error "Connection attempt failed"))
     (tmwchat-log (format "Successfully connected to %s:%d" server port))
     (set-process-coding-system process 'binary 'binary)
-    (setq-local tmwchat--client-process process)
+    (setq tmwchat--client-process process)
     (set-process-filter process 'tmwchat--loginsrv-filter-function)
     (set-process-sentinel process 'tmwchat--loginsrv-sentinel-function)
     (write-u16 #x7530)))  ;; request_version
@@ -725,7 +725,9 @@
 (defun tmwchat--notify (title text)
   ;; (message (format "frame-visible: %s" (frame-visible-p (selected-frame))))
   (unless (and (eq (frame-visible-p (selected-frame)) t)
-	       (equal (buffer-name) "*tmwchat*"))
+	       (get-buffer-window (process-buffer
+				   (get-process "tmwchat"))
+				  'visible))
     (let ((icon (concat (file-name-as-directory tmwchat-root-directory)
 			"Tmw_logo.png"))
 	  (sound (concat (file-name-as-directory tmwchat-root-directory)
@@ -854,9 +856,9 @@
     (goto-char tmwchat--start-point)
     (insert msg)
     (insert "\n")
-    (add-text-properties (- tmwchat--start-point 1)
-			 (- (point) 1)
-    			 '(read-only t))
+    ;; (add-text-properties (buffer-end -1)
+    ;; 			 (- (point) 1)
+    ;; 			 '(read-only t))
     (setq tmwchat--start-point (point)))
     
   (when (processp (get-process "tmwchat"))
