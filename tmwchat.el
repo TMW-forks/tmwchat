@@ -1,6 +1,7 @@
 (require 'bindat)
 (require 'cl)
 (require 'todochiku)
+(require 'tmwchat-speedbar)
 
 ;;------------------------------------------------------------------
 ;; Customizable settings
@@ -465,7 +466,8 @@
   (if (string-equal event "deleted\n")
       (message "Exited successfully")
     (error event))
-  (cancel-timer tmwchat--ping-timer))
+  (cancel-timer tmwchat--ping-timer)
+  (cancel-timer tmwchat--fetch-online-list-timer))
 
 (defun tmwchat--mapserv-filter-function (process packet)
   "The process filter for TMW server"
@@ -542,6 +544,7 @@
   (let ((id (bindat-get-field info 'id))
 	(name (bindat-get-field info 'name)))
     (puthash id name tmwchat--beings)
+    (setq tmwchat--speedbar-dirty t)
     ;; (tmwchat-log (format "%s pops out" name))
     (when (equal id tmwchat--late-id)
       (setq tmwchat--late-id nil)
@@ -609,7 +612,7 @@
 
 (setq tmwchat-online-users nil)
 
-(defun tmwchat-online-list ()
+(defun tmwchat--online-list ()
   (defun chomp-end (str)
     (when (string-suffix-p "(GM) " str)
       (setq str (substring str 0 -5)))
@@ -627,6 +630,7 @@
   (defun callback (status)
     (let ((data (buffer-string)))
       (setq tmwchat-online-users (gen-list data))
+      (setq tmwchat--speedbar-dirty t)
       (kill-buffer (current-buffer))))
   (let ((url "http://server.themanaworld.org/online.txt"))
     (url-retrieve url 'callback nil t t)))
@@ -669,6 +673,7 @@
 (defun whisper-message (nick msg)
   (let* ((nmsg (encode-coding-string msg 'utf-8))
 	 (nlen (length nmsg)))
+    (tmwchat--update-recent-users nick)
     (process-send-string
      tmwchat--client-process
      (bindat-pack tmwchat--chat-whisper-spec
@@ -723,6 +728,7 @@
 	(msg
 	 (tmwchat--remove-color
 	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
+    (tmwchat--update-recent-users nick)
     (tmwchat--notify nick msg)
     (tmwchat-log (format "%s whispers: %s" nick msg))))
 
