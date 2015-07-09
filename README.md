@@ -47,20 +47,24 @@ After setting up and configuring TMWChat, you log in by typing
 M-x tmwchat
 ```
 
+If you want to want to see the nearby/recent/online users list, simply
+execute the command
+```
+M-x speedbar
+```
+
 It automatically logs you into The Mana World game server (or any other
 TMWA-compatible server you specify). If  no errors occur, you can start
 chatting with your Mana-friends. There are few built-in commands
 
 ```
-/connect -- connect to TMW server. This command should not be used directly,
-            unless you used /disconnect.
-/disconnect -- disconnect from TMW server.
+/help --show help message
 /w NickName message>
 /w "NickName with spaces" message -- send a personal message to NickName
 / some_message -- send a whisper to the last person who you whispered to.
                -- it doesn't work if you didn't whisper to anyone yet.
 /emote <number> -- show emote (check source code for possible emote codes)
-/beings -- list players that are near you
+/room -- list players that are near you
 /online -- show online players list
 Any other line simply acts as a command to send a chat message in public chat.
 ```

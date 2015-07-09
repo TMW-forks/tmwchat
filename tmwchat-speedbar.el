@@ -27,14 +27,14 @@
   '("TMWChat"
     ["Test" tmwchat--speedbar-test t]))
 
-(defun tmwchat--speedbar-item-clicked (arg1 arg2 arg3)
-  (message "speedbar item clicked %s %s %s" arg1 arg2 arg3))
+(defun tmwchat--speedbar-item-clicked (nick id arg3)
+  (select-frame-set-input-focus tmwchat--frame)
+  (tmwchat--replace-whisper-cmd nick))
 
 (defun tmwchat-speedbar-buttons (directory &optional depth)
   (when tmwchat--speedbar-dirty
     (let ((nearby ())
 	  (recent (ring-elements tmwchat-recent-users)))
-      (message "Redrawing speedbar...")
       (erase-buffer)
       (speedbar-insert-separator "Nearby")
       (maphash (lambda (id nick)

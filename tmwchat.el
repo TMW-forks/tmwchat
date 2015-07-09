@@ -88,6 +88,8 @@
 (defvar tmwchat--beings (make-hash-table :test 'equal))
 (make-variable-buffer-local 'tmwchat--beings)
 (setq tmwchat--client-process nil)
+(setq tmwchat--late-id 0)
+(setq tmechat--late-msg "")
 
 ;;----------------------------------------------------------------------
 (defconst tmwchat--u16-spec
@@ -485,7 +487,8 @@
       (write-u16 #x7d))    ;; map-loaded
      ((= opcode #x73)
       (let ((info (bindat-unpack tmwchat--connect-mapserv-response-spec packet)))
-	(tmwchat-log (format "%s" info)))
+	(tmwchat-log (format "%s" info))
+	(tmwchat-log "Type /help <enter> to get infomation about available commands"))
       (write-u16 #x7d))      ;; map-loaded
      ((assoc opcode tmwchat--mapserv-packets)
       (let ((expected-len)
@@ -674,6 +677,7 @@
   (let* ((nmsg (encode-coding-string msg 'utf-8))
 	 (nlen (length nmsg)))
     (tmwchat--update-recent-users nick)
+    (tmwchat-log (format "PM -> %s : %s" nick msg))
     (process-send-string
      tmwchat--client-process
      (bindat-pack tmwchat--chat-whisper-spec
@@ -766,6 +770,28 @@
     (setq str (replace-match "" nil nil str)))
   str)
 
+(defun tmwchat--replace-whisper-cmd (nick)
+  (interactive "sNick:")
+  (defun insert-formatted (nick-q msg)
+    (with-current-buffer "*tmwchat*"
+      (delete-region tmwchat--start-point (buffer-end 1))
+      (insert (concat "/w " nick-q " " msg))
+      (goto-char (buffer-end 1))))
+  (with-current-buffer "*tmwchat*"
+    (let ((line (buffer-substring tmwchat--start-point (buffer-end 1)))
+	  (nick-q (if (string-match-p " " nick)
+		      (concat "\"" nick "\"")
+		    nick)))
+      (condition-case nil
+	  (if (string-prefix-p "/w " line)
+	      (let* ((parsed (tmwchat--parse-msg (substring line 3)))
+		     (old-nick (car parsed))
+		     (msg (cdr parsed)))
+		(unless (string-equal old-nick nick)
+		  (insert-formatted nick-q msg)))
+	    (insert-formatted nick-q ""))
+	(error (insert-formatted nick-q ""))))))
+
 ;;====================================================================
 (defvar tmwchat-mode-map
   (let ((map (make-sparse-keymap)))
@@ -798,8 +824,8 @@
   (set (make-local-variable 'tmwchat--mapserv-host) nil)
   (set (make-local-variable 'tmwchat--mapserv-port) nil)  
   (set (make-local-variable 'tmwchat--char-id) 0)  
-  (set (make-local-variable 'tmwchat--late-id) nil)
-  (set (make-local-variable 'tmwchat--late-msg) "")
+  ;; (set (make-local-variable 'tmwchat--late-id) nil)
+  ;; (set (make-local-variable 'tmwchat--late-msg) "")
   (set (make-local-variable 'tmwchat-sent) nil)
   (set (make-local-variable 'tmwchat--fetch-online-list-timer) nil)
   (set (make-local-variable 'tmwchat--last-whisper-nick) "")
@@ -817,6 +843,7 @@
   (tmwchat-mode)
   (setq debug-on-error t)
   (setq truncate-lines nil)
+  (setq tmwchat--frame (selected-frame))
   (tmwchat-start-client tmwchat-server-host tmwchat-server-port))
 
 (defun tmwchat-read-print ()
@@ -828,7 +855,7 @@
     ;; (setq tmwchat--start-point (point))
     (tmwchat-process)
     ;; (insert "\n")
-    (setq tmwchat--start-point (point))))
+    ))
 
 (defun tmwchat-readin ()
   "Read message and return it"
@@ -836,10 +863,10 @@
   (buffer-substring tmwchat--start-point (point)))
 
 (defun tmwchat--parse-msg (msg)
-  (unless (stringp msg)
-    (error "tmwchat--parse-msg: msg must be string"))
+  (unless (and (stringp msg) (> (length msg) 0))
+    (error "tmwchat--parse-msg: msg must be non-empty string"))
   (if (string-match "^\"" msg)
-      (if (string-match "\"" (substring msg 1))	  
+      (if (string-match "\"" (substring msg 1))
 	  (cons (substring msg 1 (match-end 0))
 		(substring msg (+ (match-end 0) 2)))
 	(error "Bad string format"))
@@ -849,13 +876,20 @@
 
 (defun tmwchat-process ()
   (cond
-   ((equal tmwchat-sent "/connect")
-    (tmwchat-start-client tmwchat-server-host tmwchat-server-port))
+   ((string-equal tmwchat-sent "/help")
+    (tmwchat-log
+     (concat
+      "/help -- show this help\n"
+      "/room -- show nearby players\n"
+      "/emote <number> -- show emote\n"
+      "/w NickName Message -- send a PM to NickName\n"
+      "/w \"NickName With Spaces\" Message -- send PM to NickName\n"
+      "/online -- show online players\n"
+      "Any other command sends a message to the public chat"
+      )))
    ((equal tmwchat-sent "/online")
     (tmwchat-log (format "%s" tmwchat-online-users)))
-   ((equal tmwchat-sent "/disconnect")
-    (tmwchat-stop-client))
-   ((equal tmwchat-sent "/beings")
+   ((equal tmwchat-sent "/room")
     (tmwchat-show-beings))
    ((string-prefix-p "/emote" tmwchat-sent)
     (show-emote (string-to-int (substring tmwchat-sent 7))))
@@ -871,8 +905,16 @@
      (substring tmwchat-sent 2)))
    (t
     (when (processp tmwchat--client-process)
-      (delete-region tmwchat--start-point (point))
-      (chat-message tmwchat-sent)))))
+      (setq tmwchat--last-whisper-nick nil)
+      (chat-message tmwchat-sent))))
+  (delete-region tmwchat--start-point (buffer-end 1))
+  (setq tmwchat--start-point (buffer-end 1))
+  (when tmwchat--last-whisper-nick
+    (let ((nick-q (if (string-match-p " " tmwchat--last-whisper-nick)
+		      (concat "\"" tmwchat--last-whisper-nick "\"")
+		    tmwchat--last-whisper-nick)))
+      (insert (concat "/w " nick-q " "))
+      (goto-char (buffer-end 1)))))
 
 
 (defun tmwchat-log (msg)
