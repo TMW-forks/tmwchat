@@ -50,6 +50,16 @@
   :group 'tmwchat
   :type 'string)
 
+(defcustom tmwchat-debug nil
+  "Show debugging messages"
+  :group 'tmwchat
+  :type 'boolean)
+
+(defcustom tmwchat-sound t
+  "Play notification sounds"
+  :group 'tmwchat
+  :type 'boolean)
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "Surprise")     (3 . "Happy")
@@ -154,7 +164,7 @@
 				      :type 'plain)))
     (unless (processp process)
       (error "Connection attempt failed"))
-    (tmwchat-log (format "Successfully connected to %s:%d" server port))
+    (tmwchat-log (format "Connected to login server %s:%d" server port))
     (set-process-coding-system process 'binary 'binary)
     (setq tmwchat--client-process process)
     (set-process-filter process 'tmwchat--loginsrv-filter-function)
@@ -199,7 +209,8 @@
 		   tmwchat--account (bindat-get-field login-response-info 'account)
 		   tmwchat--session1 (bindat-get-field login-response-info 'session1)
 		   tmwchat--session2 (bindat-get-field login-response-info 'session2))
-	     (tmwchat-log (format "%s\n%s" update-host-info login-response-info))
+	     (when tmwchat-debug
+	       (tmwchat-log (format "%s\n%s" update-host-info login-response-info)))
 	     (delete-process process)))
 	  ((= opcode #x6a)
 	   (let ((info (bindat-unpack tmwchat--login-error-spec packet)))
@@ -256,7 +267,7 @@
 				      :type 'plain)))
     (unless (processp process)
       (error "Connection attempt failed"))
-    (tmwchat-log (format "Successfully connected to %s:%d" server port))
+    (tmwchat-log (format "Connected to character server %s:%d" server port))
     (setq tmwchat--client-process process)
     (set-process-coding-system process 'binary 'binary)
     (set-process-filter process 'tmwchat--charserv-filter-function)
@@ -300,7 +311,8 @@
 	      ;; tmwchat--mapserv-host (bindat-ip-to-string (bindat-get-field info 'address))
 	      tmwchat--mapserv-host tmwchat-server-host
 	      tmwchat--mapserv-port (bindat-get-field info 'port))
-	(tmwchat-log (format "%s" info)))
+	(when tmwchat-debug
+	  (tmwchat-log (format "%s" info))))
       (delete-process process)))))
 
 (defun tmwchat--charserv-sentinel-function (process event)
@@ -447,7 +459,7 @@
 				      :type 'plain)))
     (unless (processp process)
       (error "Connection attempt failed"))
-    (tmwchat-log (format "Successfully connected to %s:%d" server port))
+    (tmwchat-log (format "Connected to map server to %s:%d" server port))
     (setq tmwchat--client-process process)
     (set-process-coding-system process 'binary 'binary)
     (set-process-filter process 'tmwchat--mapserv-filter-function)
@@ -482,12 +494,13 @@
     ;; (tmwchat-log (format "opcode: %s" opcode))
     (cond
      ((and (> plength 4) (= opcode #x8000))
-      (let ((info (bindat-unpack tmwchat--connect-mapserv-response-spec packet 4)))
-	(tmwchat-log (format "%s" info)))
-      (write-u16 #x7d))    ;; map-loaded
+      (tmwchat--mapserv-filter-function
+       process
+       (substring packet 4)))
      ((= opcode #x73)
       (let ((info (bindat-unpack tmwchat--connect-mapserv-response-spec packet)))
-	(tmwchat-log (format "%s" info))
+	(when tmwchat-debug
+	  (tmwchat-log (format "%s" info)))
 	(tmwchat-log "Type /help <enter> to get infomation about available commands"))
       (write-u16 #x7d))      ;; map-loaded
      ((assoc opcode tmwchat--mapserv-packets)
@@ -499,8 +512,6 @@
 	    (setq expected-len spec)
 	  (setq parsed-data (bindat-unpack spec packet 2)
 		expected-len (bindat-length spec parsed-data)))
-	;; (tmwchat-log (format "expected-len %s plength %s  fun %s"
-	;; 		     expected-len plength fun))
 	(unless (numberp spec)
           (when (functionp fun)
 	    ;; (tmwchat-log (format "%s %s" fun parsed-data))
@@ -511,8 +522,7 @@
 	    ;; 			 (bindat-unpack tmwchat--u16-spec new-packet)))
 	    (tmwchat--mapserv-filter-function
 	     process
-	     new-packet))
-	  ))))))
+	     new-packet))))))))
 
 ;;--------------------------------------------------------------------------------
 (defun being-chat (info)
@@ -760,10 +770,8 @@
 	  (sound (concat (file-name-as-directory tmwchat-root-directory)
 			 "newmessage.wav")))
       (todochiku-message title text icon)
-      (play-sound-file sound))))
-    ;; (notifications-notify :title title
-    ;; 			  :body text
-;; 			  :timeout 5000)))
+      (when tmwchat-sound
+	(play-sound-file sound)))))
 
 (defun tmwchat--remove-color (str)
   (while (string-match "##[0-9]" str)
@@ -774,11 +782,11 @@
   (interactive "sNick:")
   (defun insert-formatted (nick-q msg)
     (with-current-buffer "*tmwchat*"
-      (delete-region tmwchat--start-point (buffer-end 1))
+      (delete-region tmwchat--start-point (point-max))
       (insert (concat "/w " nick-q " " msg))
-      (goto-char (buffer-end 1))))
+      (goto-char (point-max))))
   (with-current-buffer "*tmwchat*"
-    (let ((line (buffer-substring tmwchat--start-point (buffer-end 1)))
+    (let ((line (buffer-substring tmwchat--start-point (point-max)))
 	  (nick-q (if (string-match-p " " nick)
 		      (concat "\"" nick "\"")
 		    nick)))
@@ -851,15 +859,15 @@
   (interactive)
   (unless (equal tmwchat--start-point (point))
     (setq tmwchat-sent (tmwchat-readin))
-    (insert "\n")
+    (newline)
     ;; (setq tmwchat--start-point (point))
     (tmwchat-process)
-    ;; (insert "\n")
+    ;; (newline)
     ))
 
 (defun tmwchat-readin ()
   "Read message and return it"
-  (goto-char (buffer-end 1))
+  (goto-char (point-max))
   (buffer-substring tmwchat--start-point (point)))
 
 (defun tmwchat--parse-msg (msg)
@@ -882,18 +890,32 @@
       "/help -- show this help\n"
       "/room -- show nearby players\n"
       "/emote <number> -- show emote\n"
+      "/emotes -- show emote codes\n"
+      "/mute -- mute notification sounds\n"
+      "/unmute -- play notification sounds\n"
       "/w NickName Message -- send a PM to NickName\n"
       "/w \"NickName With Spaces\" Message -- send PM to NickName\n"
       "/online -- show online players\n"
+      "/debug -- toggle printing debug information\n"
       "Any other command sends a message to the public chat"
       )))
    ((equal tmwchat-sent "/online")
     (tmwchat-log (format "%s" tmwchat-online-users)))
    ((equal tmwchat-sent "/room")
     (tmwchat-show-beings))
-   ((string-prefix-p "/emote" tmwchat-sent)
+   ((string-prefix-p "/emote " tmwchat-sent)
     (show-emote (string-to-int (substring tmwchat-sent 7))))
-   ((string-prefix-p "/w" tmwchat-sent)
+   ((string-equal "/emotes" tmwchat-sent)
+    (tmwchat-log (format "%s" tmwchat-emotes)))
+   ((string-equal "/mute" tmwchat-sent)
+    (tmwchat-log "Sounds are muted")
+    (setq tmechat-sound nil))
+   ((string-equal "/unmute" tmwchat-sent)
+    (tmwchat-log "Sounds are played")
+    (setq tmechat-sound t))
+   ((string-equal "/debug" tmwchat-sent)
+    (setq tmechat-debug (not tmwchat-debug)))
+   ((string-prefix-p "/w " tmwchat-sent)
     (let* ((parsed (tmwchat--parse-msg (substring tmwchat-sent 3)))
 	   (nick (car parsed))
 	   (msg (cdr parsed)))
@@ -907,22 +929,22 @@
     (when (processp tmwchat--client-process)
       (setq tmwchat--last-whisper-nick nil)
       (chat-message tmwchat-sent))))
-  (delete-region tmwchat--start-point (buffer-end 1))
-  (setq tmwchat--start-point (buffer-end 1))
+  (delete-region tmwchat--start-point (point-max))
+  (setq tmwchat--start-point (point-max))
   (when tmwchat--last-whisper-nick
     (let ((nick-q (if (string-match-p " " tmwchat--last-whisper-nick)
 		      (concat "\"" tmwchat--last-whisper-nick "\"")
 		    tmwchat--last-whisper-nick)))
       (insert (concat "/w " nick-q " "))
-      (goto-char (buffer-end 1)))))
+      (goto-char (point-max)))))
 
 
 (defun tmwchat-log (msg)
   (defun log ()
     (goto-char tmwchat--start-point)
     (insert msg)
-    (insert "\n")
-    ;; (add-text-properties (buffer-end -1)
+    (newline)
+    ;; (add-text-properties (point-min)
     ;; 			 (- (point) 1)
     ;; 			 '(read-only t))
     (setq tmwchat--start-point (point)))
