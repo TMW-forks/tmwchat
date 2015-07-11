@@ -60,6 +60,16 @@
   :group 'tmwchat
   :type 'boolean)
 
+(defcustom tmwchat-verbose-emotes t
+  "Show emotes in chat log"
+  :group 'tmwchat
+  :type 'boolean)
+
+(defcustom tmwchat-away-message "*AFK* I am away from keyboard"
+  "TMW password"
+  :group 'tmwchat
+  :type 'string)
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "Surprise")     (3 . "Happy")
@@ -100,6 +110,7 @@
 (setq tmwchat--client-process nil)
 (setq tmwchat--late-id 0)
 (setq tmechat--late-msg "")
+(setq tmwchat--away nil)
 
 ;;----------------------------------------------------------------------
 (defconst tmwchat--u16-spec
@@ -544,7 +555,7 @@
 (defun being-emotion (info)
   (let ((emote-repr (cdr (assoc (bindat-get-field info 'emote) tmwchat-emotes)))
 	(name (being-name (bindat-get-field info 'id))))
-    (when (and name emote-repr)
+    (when (and name emote-repr tmwchat-verbose-emotes)
       (tmwchat-log (format "%s emotes: (%s)" name emote-repr)))))
     
 (defun being-move (info)
@@ -742,6 +753,8 @@
 	(msg
 	 (tmwchat--remove-color
 	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
+    (when tmwchat--away
+      (whisper-message nick tmwchat-away-message))
     (tmwchat--update-recent-users nick)
     (tmwchat--notify nick msg)
     (tmwchat-log (format "%s whispers: %s" nick msg))))
@@ -836,7 +849,7 @@
   ;; (set (make-local-variable 'tmwchat--late-msg) "")
   (set (make-local-variable 'tmwchat-sent) nil)
   (set (make-local-variable 'tmwchat--fetch-online-list-timer) nil)
-  (set (make-local-variable 'tmwchat--last-whisper-nick) "")
+  (set (make-local-variable 'tmwchat--last-whisper-nick) nil)
   (set (make-local-variable 'tmwchat--ping-timer) nil)
   (mapc (lambda (f)
 	  (make-variable-buffer-local (nth 2 f)))
@@ -896,6 +909,8 @@
       "/w NickName Message -- send a PM to NickName\n"
       "/w \"NickName With Spaces\" Message -- send PM to NickName\n"
       "/online -- show online players\n"
+      "/away [optional afk message] -- away from keyboard\n"
+      "/back -- you are back!\n"
       "/debug -- toggle printing debug information\n"
       "Any other command sends a message to the public chat"
       )))
@@ -909,10 +924,19 @@
     (tmwchat-log (format "%s" tmwchat-emotes)))
    ((string-equal "/mute" tmwchat-sent)
     (tmwchat-log "Sounds are muted")
-    (setq tmechat-sound nil))
+    (setq tmwchat-sound nil))
    ((string-equal "/unmute" tmwchat-sent)
     (tmwchat-log "Sounds are played")
-    (setq tmechat-sound t))
+    (setq tmwchat-sound t))
+   ((string-equal "/back" tmwchat-sent)
+    (setq tmwchat--away nil))
+   ((string-prefix-p "/away" tmwchat-sent)
+    (setq tmwchat--away t)
+    (condition-case nil
+	(let ((afk-msg (substring tmwchat-sent 6)))
+	  (unless (= (length afk-msg) 0)
+	    (setq tmwchat-away-message afk-msg)))
+      (error nil)))
    ((string-equal "/debug" tmwchat-sent)
     (setq tmechat-debug (not tmwchat-debug)))
    ((string-prefix-p "/w " tmwchat-sent)
