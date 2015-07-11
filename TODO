@@ -3,14 +3,15 @@
 * Support for few "active" commands (/sit, /move etc)
 * Chat logs
 * /debug command for toggling debug information
-* Speedbar integration
+* Speedbar integration (partly done)
 * BUG: Party chat support
 * Ignored users support
-* /away command support
+* /away command support (done)
 * Smarter notifications
-* /sound and /mute commands
+* /sound and /mute commands (done)
 * /ping command
 * reconnect when connection is lost
 * save unread "important" messages to a different buffer
 * tab-completion for commands and nicknames
 * guild bot support
+* autoaway

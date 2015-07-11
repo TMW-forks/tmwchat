@@ -70,6 +70,11 @@
   :group 'tmwchat
   :type 'string)
 
+(defcustom tmwchat-whispers-to-buffers t
+  "Send whispers to separate buffers"
+  :group 'tmwchat
+  :type 'boolean)
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "Surprise")     (3 . "Happy")
@@ -753,11 +758,14 @@
 	(msg
 	 (tmwchat--remove-color
 	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
-    (when tmwchat--away
-      (whisper-message nick tmwchat-away-message))
     (tmwchat--update-recent-users nick)
     (tmwchat--notify nick msg)
-    (tmwchat-log (format "%s whispers: %s" nick msg))))
+    (tmwchat-log (format "%s whispers: %s" nick msg))
+    (when tmwchat--away
+      (whisper-message nick tmwchat-away-message))
+    (when tmwchat-whispers-to-buffers
+      (tmwchat--whisper-to-buffer nick msg))
+    ))
 
 ;;====================================================================
 (defun tmwchat-show-beings ()
@@ -812,6 +820,13 @@
 		  (insert-formatted nick-q msg)))
 	    (insert-formatted nick-q ""))
 	(error (insert-formatted nick-q ""))))))
+
+(defun tmwchat--whisper-to-buffer (nick msg)
+  (with-current-buffer (get-buffer-create (concat "TMW: " nick))
+    (goto-char (point-max))
+    ;; if not curr_buffer unread[nick]++
+    (insert (format "%s : %s" nick msg))
+    (newline)))
 
 ;;====================================================================
 (defvar tmwchat-mode-map
@@ -885,7 +900,7 @@
 
 (defun tmwchat--parse-msg (msg)
   (unless (and (stringp msg) (> (length msg) 0))
-    (error "tmwchat--parse-msg: msg must be non-empty string"))
+    (error "tmwch0at--parse-msg: msg must be non-empty string"))
   (if (string-match "^\"" msg)
       (if (string-match "\"" (substring msg 1))
 	  (cons (substring msg 1 (match-end 0))
