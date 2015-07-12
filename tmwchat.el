@@ -641,6 +641,17 @@
 
 (setq tmwchat-online-users nil)
 
+(when (or (< emacs-major-version 24)
+	  (and (= emacs-major-version 24)
+	       (< emacs-minor-version 4)))
+  (defun string-suffix-p (str1 str2 &optional ignore-case)
+    (let ((begin2 (- (length str2) (length str1)))
+	  (end2 (length str2)))
+      (when (< begin2 0) (setq begin2 0))
+      (eq t (compare-strings str1 nil nil
+			     str2 begin2 end2
+			     ignore-case)))))
+
 (defun tmwchat--online-list ()
   (defun chomp-end (str)
     (when (string-suffix-p "(GM) " str)
@@ -951,7 +962,8 @@
 	(let ((afk-msg (substring tmwchat-sent 6)))
 	  (unless (= (length afk-msg) 0)
 	    (setq tmwchat-away-message afk-msg)))
-      (error nil)))
+      (error nil))
+    (tmwchat-log tmwchat-away-message))
    ((string-equal "/debug" tmwchat-sent)
     (setq tmechat-debug (not tmwchat-debug)))
    ((string-prefix-p "/w " tmwchat-sent)
