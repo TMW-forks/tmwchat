@@ -117,6 +117,11 @@
 (setq tmechat--late-msg "")
 (setq tmwchat--away nil)
 
+(defun tmwchat-send-packet (spec data)
+  (process-send-string
+   tmwchat--client-process
+   (bindat-pack spec data)))
+
 ;;----------------------------------------------------------------------
 (defconst tmwchat--u16-spec
   '((opcode        u16r)))
@@ -778,6 +783,43 @@
       (tmwchat--whisper-to-buffer nick msg))
     ))
 
+;;-------------------------------------------------------------------
+(defconst tmwchat--change-act-spec
+  '((opcode    u16r)  ;; #x89
+    (fill      4)
+    (action    u8)))
+
+(defun tmwchat--sit ()
+  (tmwchat-send-packet tmwchat--change-act-spec
+		       '((opcode . #x89)
+			 (action . 2))))
+
+(defun tmwchat--stand ()
+  (tmwchat-send-packet tmwchat--change-act-spec
+		       '((opcode . #x89)
+			 (action . 3))))
+
+;;-------------------------------------------------------------------
+(defconst tmwchat--directions
+  '(("down"  .  1)
+    ("left"  .  2)
+    ("up"    .  4)
+    ("right" .  8)))
+
+(defconst tmwchat--being-change-dir-spec
+  '((opcode    u16r)  ;; #x9b
+    (fill      2)
+    (dir       u8)))
+
+(defun tmwchat-turn (direction)
+  (let ((dir (cdr (assoc direction tmwchat--directions))))
+    (if dir
+	(tmwchat-send-packet
+	 tmwchat--being-change-dir-spec
+	 (list (cons 'opcode #x9b)
+	       (cons 'dir dir)))
+      (error "Wring direction: %s" direction))))
+
 ;;====================================================================
 (defun tmwchat-show-beings ()
   (maphash (lambda (key value)
@@ -937,13 +979,22 @@
       "/online -- show online players\n"
       "/away [optional afk message] -- away from keyboard\n"
       "/back -- you are back!\n"
+      "/sit -- Sit down\n"
+      "/stand -- Stand up\n"
+      "/turn left|right|up|down -- turn in given direction\n"
       "/debug -- toggle printing debug information\n"
       "Any other command sends a message to the public chat"
       )))
-   ((equal tmwchat-sent "/online")
+   ((string-equal tmwchat-sent "/online")
     (tmwchat-log (format "%s" tmwchat-online-users)))
-   ((equal tmwchat-sent "/room")
+   ((string-equal tmwchat-sent "/room")
     (tmwchat-show-beings))
+   ((string-equal tmwchat-sent "/sit")
+    (tmwchat--sit))
+   ((string-equal tmwchat-sent "/stand")
+    (tmwchat--stand))
+   ((string-prefix-p "/turn " tmwchat-sent)
+    (tmwchat-turn (substring tmwchat-sent 6)))
    ((string-prefix-p "/emote " tmwchat-sent)
     (show-emote (string-to-int (substring tmwchat-sent 7))))
    ((string-equal "/emotes" tmwchat-sent)
