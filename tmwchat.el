@@ -112,15 +112,16 @@
 
 (defvar tmwchat--beings (make-hash-table :test 'equal))
 (make-variable-buffer-local 'tmwchat--beings)
+(defvar tmwchat--whisper-target nil)
 (setq tmwchat--client-process nil)
 (setq tmwchat--late-id 0)
 (setq tmechat--late-msg "")
 (setq tmwchat--away nil)
 
-(defun tmwchat-send-packet (spec data)
-  (process-send-string
-   tmwchat--client-process
-   (bindat-pack spec data)))
+(defun tmwchat-send-packet (spec data &optional process)
+  (let ((process (or process tmwchat--client-process))
+	(bin-data (bindat-pack spec data)))
+    (process-send-string process bin-data)))
 
 ;;----------------------------------------------------------------------
 (defconst tmwchat--u16-spec
@@ -235,11 +236,10 @@
 	     (delete-process process)))
 	  ((= opcode #x6a)
 	   (let ((info (bindat-unpack tmwchat--login-error-spec packet)))
-	     (error
-	      (format "Login error (%s): %s"
-		      (bindat-get-field info 'date)
-		      (assoc (bindat-get-field info 'code)
-			     tmwchat-login-error)))))
+	     (error "Login error (%s): %s"
+		    (bindat-get-field info 'date)
+		    (cdr (assoc (bindat-get-field info 'code)
+				tmwchat-login-error)))))
 	  (t (error "Unknown opcode %s" opcode)))))
       
 (defun tmwchat--loginsrv-sentinel-function (process event)
@@ -818,7 +818,7 @@
 	 tmwchat--being-change-dir-spec
 	 (list (cons 'opcode #x9b)
 	       (cons 'dir dir)))
-      (error "Wring direction: %s" direction))))
+      (message "Wrong direction: %s" direction))))
 
 ;;====================================================================
 (defun tmwchat-show-beings ()
@@ -876,15 +876,72 @@
 
 (defun tmwchat--whisper-to-buffer (nick msg)
   (with-current-buffer (get-buffer-create (concat "TMW: " nick))
+    (tmwchat-mode)
+    (setq-local tmwchat--whisper-target nick)
     (goto-char (point-max))
     ;; if not curr_buffer unread[nick]++
     (insert (format "%s : %s" nick msg))
     (newline)))
 
+(defun tmwchat--find-nick-completion ()
+  (defun get-online-list ()
+    tmwchat-online-users)
+  (defun filter (condp lst)
+    (delq nil
+	  (mapcar (lambda (x) (and (funcall condp x) x)) lst)))
+  (let ((onl (get-online-list))
+	(len 3)
+	(partial)
+	(nick)
+	(memb))
+    (while (> (length onl) 1)
+      (setq partial (buffer-substring (- (point) len) (point)))
+      (setq onl (filter (lambda (nick)
+			  (string-match-p (regexp-quote partial) nick))
+			onl))
+      (when (setq memb (member-ignore-case partial onl))
+	(setq onl (list (car memb))))
+      (setq len (1+ len)))
+    (when onl
+      (setq len (- len 1))
+      (setq nick (car onl))
+      (while (string-match-p (regexp-quote partial) nick)
+	(setq len (1+ len))
+	(setq partial (buffer-substring (- (point) len) (point))))
+      (setq len (- len 1))
+      (when (eq (aref partial 1) 32)
+	(setq len (- len 1)))
+      (cons nick len))))
+
+(defun tmwchat--replace-nick-completion (nick partial-len)
+  (let* ((pt-end (point))
+	 (pt-begin (- pt-end partial-len))
+	 (nick-q (if (string-match-p " " nick)
+		     (concat "\"" nick "\" ")
+		   (concat nick " "))))
+    (when (equal (char-before pt-begin) 34)
+      (setq pt-begin (- pt-begin 1)))
+    (delete-region pt-begin pt-end)
+    (insert nick-q)))
+ 
+(defun tmwchat-tab-complete ()
+  (interactive)
+  (let ((result (tmwchat--find-nick-completion)))
+    (when result
+      (tmwchat--replace-nick-completion (car result) (cdr result)))))
+
 ;;====================================================================
+(defun tmwchat-make-read-only ()
+  "Make all the text in the current buffer read-only."
+  (put-text-property (point-min) (point-max) 'read-only t)
+  (put-text-property (point-min) (point-max) 'front-sticky t)
+  (put-text-property (point-min) (point-max) 'rear-nonsticky t))
+
+
 (defvar tmwchat-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\r" 'tmwchat-read-print)
+    (define-key map "\t" 'tmwchat-tab-complete)
     (define-key map "\d" 'tmwchat--backspace)
     map))
 
@@ -933,6 +990,7 @@
   (setq debug-on-error t)
   (setq truncate-lines nil)
   (setq tmwchat--frame (selected-frame))
+  (setq tmwchat--window (selected-window))
   (tmwchat-start-client tmwchat-server-host tmwchat-server-port))
 
 (defun tmwchat-read-print ()
@@ -1015,6 +1073,8 @@
 	    (setq tmwchat-away-message afk-msg)))
       (error nil))
     (tmwchat-log tmwchat-away-message))
+   ((string-equal "/dc" tmwchat-sent)
+    (tmwchat-stop-client))   
    ((string-equal "/debug" tmwchat-sent)
     (setq tmechat-debug (not tmwchat-debug)))
    ((string-prefix-p "/w " tmwchat-sent)
@@ -1028,9 +1088,11 @@
      tmwchat--last-whisper-nick
      (substring tmwchat-sent 2)))
    (t
-    (when (processp tmwchat--client-process)
-      (setq tmwchat--last-whisper-nick nil)
-      (chat-message tmwchat-sent))))
+    (if tmwchat--whisper-target
+	(whisper-message tmwchat--whisper-target tmwchat-sent)
+      (progn
+	(setq tmwchat--last-whisper-nick nil)
+	(chat-message tmwchat-sent)))))
   (delete-region tmwchat--start-point (point-max))
   (setq tmwchat--start-point (point-max))
   (when tmwchat--last-whisper-nick
@@ -1041,15 +1103,15 @@
       (goto-char (point-max)))))
 
 
-(defun tmwchat-log (msg)
+(defun tmwchat-log (&rest args)
   (defun log ()
-    (goto-char tmwchat--start-point)
-    (insert msg)
-    (newline)
-    ;; (add-text-properties (point-min)
-    ;; 			 (- (point) 1)
-    ;; 			 '(read-only t))
-    (setq tmwchat--start-point (point)))
+    (let ((msg (apply 'format args))
+	  (inhibit-read-only t))
+      (goto-char tmwchat--start-point)
+      (insert msg)
+      ;; (tmwchat-make-read-only)
+      (newline)
+      (setq tmwchat--start-point (point))))
     
   (when (processp (get-process "tmwchat"))
     (with-current-buffer (process-buffer (get-process "tmwchat"))

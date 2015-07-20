@@ -29,6 +29,7 @@
 
 (defun tmwchat--speedbar-item-clicked (nick id arg3)
   (select-frame-set-input-focus tmwchat--frame)
+  (select-window tmwchat--window)
   (tmwchat--replace-whisper-cmd nick))
 
 (defun tmwchat-speedbar-buttons (directory &optional depth)
