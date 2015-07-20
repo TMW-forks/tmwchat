@@ -59,15 +59,26 @@ chatting with your Mana-friends. There are few built-in commands
 
 ```
 /help --show help message
-/w NickName message>
+/w NickName message
 /w "NickName with spaces" message -- send a personal message to NickName
 / some_message -- send a whisper to the last person who you whispered to.
                -- it doesn't work if you didn't whisper to anyone yet.
 /emote <number> -- show emote (check source code for possible emote codes)
-/room -- list players that are near you
+/emotes -- show emote codes
+/mute -- mute notification sounds
+/unmute -- play notification sounds
+/room -- list players near you
 /online -- show online players list
+/away [optional afk message] -- away from keyboard
+/back -- you are back!
+/sit -- sit down
+/stand -- stand up
+/turn left|right|up|down -- turn in given direction
+/dc -- disconnect
 Any other line simply acts as a command to send a chat message in public chat.
 ```
+
+Tab-completion for nicknames is supported.
 
 ## Dependencies ##
 * Emacs version 24.4 or higher

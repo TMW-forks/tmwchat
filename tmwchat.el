@@ -1040,6 +1040,7 @@
       "/sit -- Sit down\n"
       "/stand -- Stand up\n"
       "/turn left|right|up|down -- turn in given direction\n"
+      "/dc -- disconnect\n"
       "/debug -- toggle printing debug information\n"
       "Any other command sends a message to the public chat"
       )))
