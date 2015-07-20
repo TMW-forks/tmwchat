@@ -112,6 +112,7 @@
 
 (defvar tmwchat--beings (make-hash-table :test 'equal))
 (make-variable-buffer-local 'tmwchat--beings)
+(defvar tmwchat--party-members (make-hash-table :test 'equal))
 (defvar tmwchat--whisper-target nil)
 (setq tmwchat--client-process nil)
 (setq tmwchat--late-id 0)
@@ -459,11 +460,21 @@
     (#x09d 15 item-visible) 
     (#x0fb ((len          u16r)
 	    (name   strz  24)
-	    (fill         (eval (- (bindat-get-field struct 'len) 28))))
+	    (members repeat
+	     (eval (/ (- (bindat-get-field struct 'len) 28) 46))
+	     (id     vec  4)
+	     (nick  strz  24)
+	     (map   strz  16)
+	     (leader      u8)
+	     (online      u8)))
 	   party-info)
     (#x0fe 28 party-invited)
     (#x107 8  party-update-coords)
     (#x106 8  party-update-hp)
+    (#x109 ((len          u16r)
+	    (id     vec   4)
+	    (msg    strz  (eval (- (bindat-get-field struct 'len) 8))))
+	   party-chat)
     (#x1b9 4  skill-cast-cancel)
     (#x13e 22 skill-casting)
     (#x1de 31 skill-damage)
@@ -529,6 +540,8 @@
 	    (parsed-data)
 	    (spec (nth 1 (assoc opcode tmwchat--mapserv-packets)))
 	    (fun (nth 2 (assoc opcode tmwchat--mapserv-packets))))
+	(when (eq opcode #x0fb)
+	  (setq tmwchat--debug-packet packet))
 	(if (numberp spec)
 	    (setq expected-len spec)
 	  (setq parsed-data (bindat-unpack spec packet 2)
@@ -783,6 +796,33 @@
       (tmwchat--whisper-to-buffer nick msg))
     ))
 
+(defun party-info (info)
+  (let* ((len (bindat-get-field info 'len))
+	 (name (bindat-get-field info 'name))
+	 (count (/ (- len 28) 46))
+	 (curr 0))
+    (while (< curr count)
+      (let ((member-info)
+	    (id     (bindat-get-field info 'members curr 'id))
+	    (nick   (bindat-get-field info 'members curr 'nick))
+	    (map    (bindat-get-field info 'members curr 'map))
+	    (leader (bindat-get-field info 'members curr 'leader))
+	    (online (bindat-get-field info 'members curr 'online)))
+	(setq member-info (list nick map leader online))
+	(puthash id member-info tmwchat--party-members)
+	;; (message "%s (%s/%s): %s" name curr count member-info) 
+	(setq curr (1+ curr))))))
+
+(defun party-chat (info)
+  (let ((id     (bindat-get-field info 'id))
+	(msg    (bindat-get-field info 'msg))
+	(nick))
+    (setq nick (or (ignore-errors
+		     (car (gethash id tmwchat--party-members)))
+		   (format "%s" id)))
+    (tmwchat-log "[Party] %s : %s" nick msg)))
+    
+
 ;;-------------------------------------------------------------------
 (defconst tmwchat--change-act-spec
   '((opcode    u16r)  ;; #x89
@@ -819,6 +859,19 @@
 	 (list (cons 'opcode #x9b)
 	       (cons 'dir dir)))
       (message "Wrong direction: %s" direction))))
+
+(defconst tmwchat--party-message-spec
+  '((opcode      u16r)  ; #x0108
+    (len         u16r)
+    (msg    str  (eval (- (bindat-get-field struct 'len) 4)))))
+
+(defun tmwchat-send-party-message (msg)
+  (let* ((nmsg (encode-coding-string msg 'utf-8))
+	 (nlen (length nmsg)))
+    (tmwchat-send-packet tmwchat--party-message-spec
+			 (list (cons 'opcode #x0108)
+			       (cons 'len (+ nlen 4))
+			       (cons 'msg nmsg)))))
 
 ;;====================================================================
 (defun tmwchat-show-beings ()
@@ -883,6 +936,7 @@
     (insert (format "%s : %s" nick msg))
     (newline)))
 
+;;----------------------------------------------------------------------
 (defun tmwchat--find-nick-completion ()
   (defun get-online-list ()
     tmwchat-online-users)
@@ -1034,6 +1088,7 @@
       "/unmute -- play notification sounds\n"
       "/w NickName Message -- send a PM to NickName\n"
       "/w \"NickName With Spaces\" Message -- send PM to NickName\n"
+      "/party Message -- send message to your party\n"
       "/online -- show online players\n"
       "/away [optional afk message] -- away from keyboard\n"
       "/back -- you are back!\n"
@@ -1064,6 +1119,8 @@
    ((string-equal "/unmute" tmwchat-sent)
     (tmwchat-log "Sounds are played")
     (setq tmwchat-sound t))
+   ((string-prefix-p "/party " tmwchat-sent)
+    (tmwchat-send-party-message (substring tmwchat-sent 7)))
    ((string-equal "/back" tmwchat-sent)
     (setq tmwchat--away nil))
    ((string-prefix-p "/away" tmwchat-sent)

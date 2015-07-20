@@ -65,6 +65,7 @@ chatting with your Mana-friends. There are few built-in commands
                -- it doesn't work if you didn't whisper to anyone yet.
 /emote <number> -- show emote (check source code for possible emote codes)
 /emotes -- show emote codes
+/party <message> -- send message to your party
 /mute -- mute notification sounds
 /unmute -- play notification sounds
 /room -- list players near you
