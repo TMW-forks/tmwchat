@@ -115,6 +115,7 @@
 (defvar tmwchat--party-members (make-hash-table :test 'equal))
 (defvar tmwchat--players (make-hash-table :test 'equal))
 (defvar tmwchat--whisper-target nil)
+(defvar tmwchat--date nil)
 (setq tmwchat--partial-packet nil)
 (setq tmwchat--client-process nil)
 (setq tmwchat--late-id 0)
@@ -591,7 +592,6 @@
       (tmwchat-log (format "%s emotes: (%s)" name emote-repr)))))
     
 (defun being-move (info)
-  ;; add-being ...
   (let ((id (bindat-get-field info 'id))
 	(job (bindat-get-field info 'job)))
     (add-being id job)))
@@ -601,7 +601,6 @@
 	(name (bindat-get-field info 'name)))
     (puthash id name tmwchat--beings)
     (setq tmwchat--speedbar-dirty t)
-    ;; (tmwchat-log (format "%s pops out" name))
     (when (equal id tmwchat--late-id)
       (setq tmwchat--late-id nil)
       (let ((msg (tmwchat--remove-color tmwchat--late-msg)))
@@ -618,8 +617,6 @@
   (let ((id (bindat-get-field info 'id))
 	(dead-flag (bindat-get-field info 'dead-flag)))
     (unless (= dead-flag 1)
-      ;; (when (being-name id)
-      ;; 	(tmwchat-log (format "%s is gone" (being-name id))))
       (remhash id tmwchat--beings))))
 
 (defconst tmwchat--being-name-request-spec
@@ -836,6 +833,14 @@
 		   (format "%s" id)))
     (tmwchat-log "[Party] %s : %s" nick msg)))
     
+
+(defun tmwchat-time ()
+  (let ((date (format-time-string "%D")))
+    (if (string-equal date tmwchat--date)
+	(format-time-string "%R")
+      (progn
+	(setq tmwchat--date date)
+	(format-time-string "%D %R")))))
 
 ;;-------------------------------------------------------------------
 (defconst tmwchat--change-act-spec
@@ -1179,6 +1184,7 @@
   (defun log ()
     (let ((msg (apply 'format args))
 	  (inhibit-read-only t))
+      (setq msg (format "[%s] %s" (tmwchat-time) msg))
       (goto-char tmwchat--start-point)
       (insert msg)
       ;; (tmwchat-make-read-only)
