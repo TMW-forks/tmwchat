@@ -113,7 +113,9 @@
 (defvar tmwchat--beings (make-hash-table :test 'equal))
 (make-variable-buffer-local 'tmwchat--beings)
 (defvar tmwchat--party-members (make-hash-table :test 'equal))
+(defvar tmwchat--players (make-hash-table :test 'equal))
 (defvar tmwchat--whisper-target nil)
+(setq tmwchat--partial-packet nil)
 (setq tmwchat--client-process nil)
 (setq tmwchat--late-id 0)
 (setq tmechat--late-msg "")
@@ -484,7 +486,8 @@
 	    (nick  strz   24)
 	    (msg   strz (eval (- (bindat-get-field struct 'len) 28))))
 	   whisper)
-    (#x098  1 whisper-response)))
+    (#x098 ((code         u8))
+	   whisper-response)))
 
 (defun tmwchat--connect-map-server (server port)
   (let ((process (open-network-stream "tmwchat" "*tmwchat*" server port
@@ -518,7 +521,10 @@
 (defun tmwchat--mapserv-filter-function (process packet)
   "The process filter for TMW server"
   ;; (tmwchat-log (concat "recv:" packet))
-  (setq tmwchat--last-packet packet)
+  (when tmwchat--partial-packet
+    (setq packet (concat tmwchat--partial-packet packet)
+	  tmwchat--partial-packet nil))
+  ;; (setq tmwchat--last-packet packet)
   (let ((opcode (bindat-get-field
 		 (bindat-unpack tmwchat--u16-spec packet)
 		 'opcode))
@@ -540,23 +546,26 @@
 	    (parsed-data)
 	    (spec (nth 1 (assoc opcode tmwchat--mapserv-packets)))
 	    (fun (nth 2 (assoc opcode tmwchat--mapserv-packets))))
-	(when (eq opcode #x0fb)
-	  (setq tmwchat--debug-packet packet))
-	(if (numberp spec)
-	    (setq expected-len spec)
-	  (setq parsed-data (bindat-unpack spec packet 2)
-		expected-len (bindat-length spec parsed-data)))
-	(unless (numberp spec)
-          (when (functionp fun)
-	    ;; (tmwchat-log (format "%s %s" fun parsed-data))
-	    (funcall fun parsed-data)))
-	(when (> plength (+ expected-len 2))
-	  (let ((new-packet (substring packet (+ expected-len 2))))
-	    ;; (tmwchat-log (format "new packet: %s ..."
-	    ;; 			 (bindat-unpack tmwchat--u16-spec new-packet)))
-	    (tmwchat--mapserv-filter-function
-	     process
-	     new-packet))))))))
+	;; (when (eq opcode #x0fb)
+	;;   (setq tmwchat--debug-packet packet))
+	(condition-case nil
+	    (progn
+	      (if (numberp spec)
+		  (setq expected-len spec)
+		(setq parsed-data (bindat-unpack spec packet 2)
+		      expected-len (bindat-length spec parsed-data)))
+	      (unless (numberp spec)
+		(when (functionp fun)
+		  ;; (tmwchat-log (format "%s %s" fun parsed-data))
+		  (funcall fun parsed-data)))
+	      (when (> plength (+ expected-len 2))
+		(let ((new-packet (substring packet (+ expected-len 2))))
+		  (tmwchat--mapserv-filter-function
+		   process
+		   new-packet))))
+	  (args-out-of-range
+	     (setq tmwchat--partial-packet (concat tmwchat--partial-packet packet))))
+	  )))))
 
 ;;--------------------------------------------------------------------------------
 (defun being-chat (info)
@@ -732,7 +741,7 @@
   (let* ((nmsg (encode-coding-string msg 'utf-8))
 	 (nlen (length nmsg)))
     (tmwchat--update-recent-users nick)
-    (tmwchat-log (format "PM -> %s : %s" nick msg))
+    (tmwchat-log (format "[%s <-] %s" nick msg))
     (process-send-string
      tmwchat--client-process
      (bindat-pack tmwchat--chat-whisper-spec
@@ -789,12 +798,17 @@
 	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
     (tmwchat--update-recent-users nick)
     (tmwchat--notify nick msg)
-    (tmwchat-log (format "%s whispers: %s" nick msg))
+    (tmwchat-log (format "[%s ->] %s" nick msg))
     (when tmwchat--away
       (whisper-message nick tmwchat-away-message))
     (when tmwchat-whispers-to-buffers
       (tmwchat--whisper-to-buffer nick msg))
     ))
+
+(defun whisper-response (info)
+  (let ((code (bindat-get-field info 'code)))
+    (when (eq code 1)
+      (tmwchat-log "Recepient is offline"))))
 
 (defun party-info (info)
   (let* ((len (bindat-get-field info 'len))
