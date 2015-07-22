@@ -121,6 +121,7 @@
 (setq tmwchat--late-id 0)
 (setq tmechat--late-msg "")
 (setq tmwchat--away nil)
+(setq tmwchat-online-users nil)
 
 (defun tmwchat-send-packet (spec data &optional process)
   (let ((process (or process tmwchat--client-process))
@@ -663,8 +664,6 @@
 		      (list (cons 'opcode #x94)
 			    (cons 'id tmwchat--char-id))))))))
 
-(setq tmwchat-online-users nil)
-
 (when (or (< emacs-major-version 24)
 	  (and (= emacs-major-version 24)
 	       (< emacs-minor-version 4)))
@@ -956,6 +955,51 @@
     (newline)))
 
 ;;----------------------------------------------------------------------
+(defun tmwchat-insert-url (href label)
+  "Insert a clickable URL at current position"
+  (interactive "sUrl:\nsLabel:")
+  (insert-button
+   label
+   'action `(lambda (x) (browse-url ,href))
+   'follow-link t
+   'help-echo href))
+
+(defun tmwchat-make-url (beg end href)
+  "Make a clickable text between positions (beg, end)"
+  (interactive "nBeginning\nnEnd:\nshref:")
+  (make-button
+   beg end
+   'action `(lambda (x) (browse-url ,href))
+   'follow-link t
+   'help-echo href))   
+
+(defun tmwchat--search-urls (str)
+  (interactive "sString:")
+  (let ((urls-found)
+	(href) (label)
+	(regex "\\[@@\\([^|]+\\)|\\([^@]+\\)@@\\]"))
+    (while (string-match regex str)
+      (setq href (substring str (match-beginning 1) (match-end 1))
+	    label (substring str (match-beginning 2) (match-end 2)))
+      (setq str (replace-match label t t str))
+      (setq urls-found (cons (list (match-beginning 0) (length label) href)
+			     urls-found)))
+    (cons str urls-found)))
+
+(defun tmwchat--make-urls (str)
+  (interactive "sURL:")
+  (let ((str (concat " " str))
+	(schema) (link) (url) (m+url)
+ 	(regex "[^@|]\\(\\(http\\|https\\|ftp\\)://\\([^\t ]+\\)\\)"))
+    (while (string-match regex str)
+      (setq schema (substring str (match-beginning 2) (match-end 2))
+	    link (substring str (match-beginning 3) (match-end 3))
+	    url (concat schema "://" link)
+	    m+url (format "[@@%s|%s@@]" url link)
+	    str (replace-match m+url t t str 1)))
+    (substring str 1)))
+
+;;----------------------------------------------------------------------
 (defun tmwchat--find-nick-completion ()
   (defun get-online-list ()
     tmwchat-online-users)
@@ -1139,7 +1183,8 @@
     (tmwchat-log "Sounds are played")
     (setq tmwchat-sound t))
    ((string-prefix-p "/party " tmwchat-sent)
-    (tmwchat-send-party-message (substring tmwchat-sent 7)))
+    (tmwchat-send-party-message
+     (tmwchat--make-urls (substring tmwchat-sent 7))))
    ((string-equal "/back" tmwchat-sent)
     (setq tmwchat--away nil))
    ((string-prefix-p "/away" tmwchat-sent)
@@ -1157,19 +1202,19 @@
    ((string-prefix-p "/w " tmwchat-sent)
     (let* ((parsed (tmwchat--parse-msg (substring tmwchat-sent 3)))
 	   (nick (car parsed))
-	   (msg (cdr parsed)))
+	   (msg (tmwchat--make-urls (cdr parsed))))
       (setq tmwchat--last-whisper-nick nick)
       (whisper-message nick msg)))
-   ((string-prefix-p "/ " tmwchat-sent)
-    (whisper-message
-     tmwchat--last-whisper-nick
-     (substring tmwchat-sent 2)))
+   ;; ((string-prefix-p "/ " tmwchat-sent)
+   ;;  (whisper-message
+   ;;   tmwchat--last-whisper-nick
+   ;;   (substring tmwchat-sent 2)))
    (t
     (if tmwchat--whisper-target
 	(whisper-message tmwchat--whisper-target tmwchat-sent)
       (progn
 	(setq tmwchat--last-whisper-nick nil)
-	(chat-message tmwchat-sent)))))
+	(chat-message (tmwchat--make-urls tmwchat-sent))))))
   (delete-region tmwchat--start-point (point-max))
   (setq tmwchat--start-point (point-max))
   (when tmwchat--last-whisper-nick
@@ -1183,10 +1228,18 @@
 (defun tmwchat-log (&rest args)
   (defun log ()
     (let ((msg (apply 'format args))
+	  (msg-l)
 	  (inhibit-read-only t))
       (setq msg (format "[%s] %s" (tmwchat-time) msg))
+      (setq msg-l (tmwchat--search-urls msg))
       (goto-char tmwchat--start-point)
-      (insert msg)
+      (insert (car msg-l))
+      (mapc (lambda (url-info)
+	      (let ((beg (+ tmwchat--start-point (nth 0 url-info)))
+		    (end (+ tmwchat--start-point (nth 0 url-info) (nth 1 url-info)))
+		    (href (nth 2 url-info)))
+		(tmwchat-make-url beg end href)))
+	    (cdr msg-l))
       ;; (tmwchat-make-read-only)
       (newline)
       (setq tmwchat--start-point (point))))
