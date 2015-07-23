@@ -75,6 +75,11 @@
   :group 'tmwchat
   :type 'boolean)
 
+(defcustom tmwchat-sticky-notifications t
+  "Use sticky (permanent) notifications. They won't disapper from the screen"
+  :group 'tmwchat
+  :type 'integer)
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "Surprise")     (3 . "Happy")
@@ -793,9 +798,11 @@
 	 (tmwchat--remove-color
 	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
     (tmwchat--update-recent-users nick)
-    (tmwchat--notify nick msg)
+    (unless (string-equal nick "guild")
+      (tmwchat--notify nick msg))
     (tmwchat-log (format "[%s ->] %s" nick msg))
-    (when tmwchat--away
+    (when (and tmwchat--away
+	       (not (string-equal nick "guild")))
       (whisper-message nick tmwchat-away-message))
     (when tmwchat-whispers-to-buffers
       (tmwchat--whisper-to-buffer nick msg))
@@ -914,7 +921,7 @@
 			"Tmw_logo.png"))
 	  (sound (concat (file-name-as-directory tmwchat-root-directory)
 			 "newmessage.wav")))
-      (todochiku-message title text icon)
+      (todochiku-message title text icon tmwchat-sticky-notifications)
       (when tmwchat-sound
 	(play-sound-file sound)))))
 
