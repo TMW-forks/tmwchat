@@ -65,7 +65,7 @@
   :group 'tmwchat
   :type 'boolean)
 
-(defcustom tmwchat-away-message "*AFK* I am away from keyboard"
+(defcustom tmwchat-away-message "*AFK*: I am away from keyboard"
   "TMW password"
   :group 'tmwchat
   :type 'string)
@@ -797,16 +797,16 @@
 	(msg
 	 (tmwchat--remove-color
 	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
-    (tmwchat--update-recent-users nick)
-    (unless (string-equal nick "guild")
-      (tmwchat--notify nick msg))
-    (tmwchat-log (format "[%s ->] %s" nick msg))
-    (when (and tmwchat--away
-	       (not (string-equal nick "guild")))
-      (whisper-message nick tmwchat-away-message))
-    (when tmwchat-whispers-to-buffers
-      (tmwchat--whisper-to-buffer nick msg))
-    ))
+    (unless (string-prefix-p "!selllist" msg)
+      (tmwchat--update-recent-users nick)
+      (unless (string-equal nick "guild")
+	(tmwchat--notify nick msg))
+      (tmwchat-log (format "[%s ->] %s" nick msg))
+      (when (and tmwchat--away
+		 (not (string-equal nick "guild")))
+	(whisper-message nick tmwchat-away-message))
+      (when tmwchat-whispers-to-buffers
+	(tmwchat--whisper-to-buffer nick msg)))))
 
 (defun whisper-response (info)
   (let ((code (bindat-get-field info 'code)))
@@ -1199,7 +1199,7 @@
     (condition-case nil
 	(let ((afk-msg (substring tmwchat-sent 6)))
 	  (unless (= (length afk-msg) 0)
-	    (setq tmwchat-away-message afk-msg)))
+	    (setq tmwchat-away-message (concat "*AFK*: " afk-msg))))
       (error nil))
     (tmwchat-log tmwchat-away-message))
    ((string-equal "/dc" tmwchat-sent)

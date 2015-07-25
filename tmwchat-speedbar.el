@@ -34,7 +34,8 @@
 
 (defun tmwchat-speedbar-buttons (directory &optional depth)
   (when tmwchat--speedbar-dirty
-    (let ((nearby ())
+    (let ((nearby tmwchat--beings)
+	  (online tmwchat-online-users)
 	  (recent (ring-elements tmwchat-recent-users)))
       (erase-buffer)
       (speedbar-insert-separator "Nearby")
@@ -46,7 +47,7 @@
 		  'speedbar-highlight-face
 		  'tmwchat--speedbar-item-clicked
 		  id))
-	       tmwchat--beings)
+	       nearby)
       (speedbar-insert-separator "Recent")
       (mapc (lambda (nick)
 		 (speedbar-insert-button
@@ -67,7 +68,7 @@
 			      'speedbar-highlight-face
 			      'tmwchat--speedbar-item-clicked
 			      nil)
-      (speedbar-insert-separator "Online")
+      (speedbar-insert-separator (format "Online (%s)" (length online)))
       (mapc (lambda (nick)
 		 (speedbar-insert-button
 		  nick
@@ -75,10 +76,7 @@
 		  'speedbar-highlight-face
 		  'tmwchat--speedbar-item-clicked
 		  nil))
-	    (sort (set-difference
-		   (set-difference tmwchat-online-users nearby)
-		   recent)
-		  'string-lessp))
+	    (sort online 'string-lessp))
       (setq tmwchat--speedbar-dirty nil))))
 
 (defun tmwchat-install-speedbar-variables ()
