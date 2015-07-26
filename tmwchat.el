@@ -272,11 +272,15 @@
     (slots         u16r)
     (version       u8)
     (fill          17)
-    (chars         repeat (eval (/ (- (bindat-get-field struct 'len) 24) 106)))
-		   (struct tmwchat--charinfo-spec)))
-
-(defconst tmwchat--charinfo-spec
-  '((info vec 106  u8)))
+    (chars         repeat (eval (/ (- (bindat-get-field struct 'len) 24) 106))
+		   (id       vec   4)
+		   (fill          54)
+		   (level       u16r)
+		   (fill          14)
+		   (name    strz  24)
+		   (fill           6)
+		   (slot          u8)
+		   (fill           1))))
 
 (defconst tmwchat--select-char-spec
   '((opcode        u16r)    ;; #x66
@@ -292,6 +296,14 @@
     (map-name      strz 16)
     (address       ip)
     (port          u16r)))
+
+(defun tmwchat--find-charslot (name chars)
+  (if chars
+      (let ((char-info (car chars)))
+	(if (string-equal name (cdr (assoc 'name char-info)))
+	    (cdr (assoc 'slot char-info))
+	  (tmwchat--find-charslot name (cdr chars))))
+    (error "Charname %s not found" name)))
 
 (defun tmwchat--connect-char-server (server port)
   (let ((process (open-network-stream "tmwchat" "*tmwchat*" server port
@@ -320,19 +332,24 @@
     ;; (tmwchat-log (format "opcode: %s" opcode))
     (cond
      ((and (> (length packet) 4) (= opcode #x8000))
-      (let ((info (bindat-unpack tmwchat--connect-charserv-response-spec packet 4)))
-	(process-send-string
-	 process
-	 (bindat-pack tmwchat--select-char-spec
-		      (list (cons 'opcode #x66)
-			    (cons 'slot tmwchat-charslot))))))
+      (tmwchat--charserv-filter-function
+       process
+       (substring packet 4)))
      ((= opcode #x6b)
-      (let ((info (bindat-unpack tmwchat--connect-charserv-response-spec packet)))
+      (let ((charslot tmwchat-charslot)
+	    (info (bindat-unpack tmwchat--connect-charserv-response-spec packet)))
+	(when tmwchat-debug
+	  (tmwchat-log "%s" info))
+	(unless (eq (length tmwchat-charname) 0)
+	  (setq charslot
+		(tmwchat--find-charslot
+		 tmwchat-charname
+		 (bindat-get-field info 'chars))))
 	(process-send-string
 	 process
 	 (bindat-pack tmwchat--select-char-spec
 		      (list (cons 'opcode #x66)
-			    (cons 'slot tmwchat-charslot))))))
+			    (cons 'slot charslot))))))
      ((= opcode #x6c)
       (let ((info (bindat-unpack tmwchat--connect-charserv-error-spec packet)))
 	(error "charserv connect error")))
@@ -743,6 +760,10 @@
 	 (nlen (length nmsg)))
     (tmwchat--update-recent-users nick)
     (tmwchat-log (format "[%s <-] %s" nick msg))
+    (when tmwchat-whispers-to-buffers
+      (tmwchat--whisper-to-buffer
+       nick
+       (format "[%s <-] %s" nick msg)))
     (process-send-string
      tmwchat--client-process
      (bindat-pack tmwchat--chat-whisper-spec
@@ -768,8 +789,11 @@
     (add-being id job)))
 
 (defun connection-problem (info)
-  (let ((code (bindat-get-field info 'code)))
-    (tmwchat-log (format "Connection problem: %s" code))))
+  (let* ((code (bindat-get-field info 'code))
+	 (err (if (eq code 2)
+		  "Account already in use"
+		(format "%s" code))))
+    (tmwchat-log (format "Connection problem: %s" err))))
 
 (defun player-chat (info)
   (let ((msg (decode-coding-string (bindat-get-field info 'msg) 'utf-8)))
@@ -806,7 +830,7 @@
 		 (not (string-equal nick "guild")))
 	(whisper-message nick tmwchat-away-message))
       (when tmwchat-whispers-to-buffers
-	(tmwchat--whisper-to-buffer nick msg)))))
+	(tmwchat--whisper-to-buffer nick (format "[%s ->] %s" nick msg))))))
 
 (defun whisper-response (info)
   (let ((code (bindat-get-field info 'code)))
@@ -958,7 +982,7 @@
     (setq-local tmwchat--whisper-target nick)
     (goto-char (point-max))
     ;; if not curr_buffer unread[nick]++
-    (insert (format "%s : %s" nick msg))
+    (insert msg)
     (newline)))
 
 ;;----------------------------------------------------------------------
