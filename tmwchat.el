@@ -1,6 +1,7 @@
 (require 'bindat)
 (require 'cl)
 (require 'todochiku)
+(require 'tmwchat-network)
 (require 'tmwchat-speedbar)
 
 ;;------------------------------------------------------------------
@@ -121,75 +122,11 @@
 (defvar tmwchat--players (make-hash-table :test 'equal))
 (defvar tmwchat--whisper-target nil)
 (defvar tmwchat--date nil)
-(setq tmwchat--partial-packet nil)
 (setq tmwchat--client-process nil)
 (setq tmwchat--late-id 0)
 (setq tmechat--late-msg "")
 (setq tmwchat--away nil)
 (setq tmwchat-online-users nil)
-
-(defun tmwchat-send-packet (spec data &optional process)
-  (let ((process (or process tmwchat--client-process))
-	(bin-data (bindat-pack spec data)))
-    (process-send-string process bin-data)))
-
-;;----------------------------------------------------------------------
-(defconst tmwchat--u16-spec
-  '((opcode        u16r)))
-
-(defun write-u16 (arg)
-  (process-send-string
-   tmwchat--client-process
-   (bindat-pack tmwchat--u16-spec (list (cons 'opcode arg)))))
-(make-variable-buffer-local 'write-u16)
-
-;;----------------------------------------------------------------------
-(defconst tmwchat--login-request-spec
-  '((opcode        u16r)    ;; #x64
-    (client-ver    u32r)
-    (username      strz 24)
-    (password      strz 24)
-    (flags         u8)))   ;; 3
-
-(defconst tmwchat--server-version-spec
-  '((opcode        u16r)    ;; #x7531
-    (b1            u8)
-    (b2            u8)
-    (b3            u8)
-    (b4            u8)
-    (options       vec 4)))
-
-(defconst tmwchat--update-host-spec
-  '((opcode        u16r)    ;; #x63
-    (len           u16r)
-    (host          strz (eval (- (bindat-get-field struct 'len) 4)))))
-
-(defconst tmwchat--login-response-spec
-  '((opcode        u16r)    ;; #x69
-    (len           u16r)
-    (session1      vec 4)
-    (account       vec 4)
-    (session2      vec 4)
-    (old-ip        ip)
-    (last-login    strz 24)
-    (fill          2)
-    (gender        u8)
-    (num-worlds    (eval (/ (- (bindat-get-field struct 'len) 47) 32)))
-    (worlds        repeat (num-worlds)
-		   (struct tmwchat--world-info-spec))))
-
-(defconst tmwchat--login-error-spec
-  '((opcode        u16r)    ;; #x6a
-    (code          u8)
-    (date          str 20)))
-
-(defconst tmwchat--world-info-spec
-  '((address       ip)
-    (port          u16r)
-    (name          strz 20)
-    (online-users  u16r)
-    (maintenance   u16r)
-    (new           u16r)))
 
 (defun tmwchat-start-client (server port)
   (let ((process (open-network-stream "tmwchat" "*tmwchat*" server port
@@ -208,108 +145,134 @@
     (error "Client is not connected"))
   (delete-process tmwchat--client-process))
 
+(defconst tmwchat--loginsrv-packets
+  '((#x7531  ((fill          8))   server-version)
+    (#x63    ((len           u16r)
+	      (host  strz    (eval (- (bindat-get-field struct 'len) 4))))
+	     update-host)
+    (#x69    ((len           u16r)
+	      (session1      vec 4)
+	      (account       vec 4)
+	      (session2      vec 4)
+	      (old-ip        ip)
+	      (last-login    strz 24)
+	      (fill          2)
+	      (gender        u8)
+	      (num-worlds    (eval (/ (- (bindat-get-field struct 'len) 47) 32)))
+	      (worlds        repeat (num-worlds)
+			     (address       ip)
+			     (port          u16r)
+			     (name          strz 20)
+			     (online-users  u16r)
+			     (maintenance   u16r)
+			     (new           u16r)))
+	     login-data)
+    (#x6a    ((code         u8)
+	      (date  str    20))
+	     login-error)))
+
+(defun server-version (info)
+  (let ((spec   '((opcode        u16r)    ;; #x64
+		  (client-ver    u32r)
+		  (username      strz 24)
+		  (password      strz 24)
+		  (flags         u8)))   ;; 3
+	(password (if (zerop (length tmwchat-password))
+		      (read-string "TMW password:")
+		    tmwchat-password)))
+    (tmwchat-send-packet spec
+			 (list (cons 'opcode #x64)
+			       (cons 'client-ver 0)
+			       (cons 'username tmwchat-username)
+			       (cons 'password password)
+			       (cons 'flags 3)))))
+
+(defun update-host (info)
+  (setq tmwchat--update-host   (bindat-get-field info 'host)))
+
+(defun login-data (info)
+  (setq	tmwchat--charserv-host tmwchat-server-host
+	tmwchat--charserv-port (bindat-get-field info 'worlds 0 'port)
+	tmwchat--account       (bindat-get-field info 'account)
+	tmwchat--session1      (bindat-get-field info 'session1)
+	tmwchat--session2      (bindat-get-field info 'session2))
+  (delete-process tmwchat--client-process))
+
+(defun login-error (info)
+  (error "Login error (%s): %s"
+	 (bindat-get-field info 'date)
+	 (cdr (assoc (bindat-get-field info 'code)
+		     tmwchat-login-error))))
+  
 (defun tmwchat--loginsrv-filter-function (process packet)
-  (let ((opcode (bindat-get-field
-		 (bindat-unpack tmwchat--u16-spec packet)
-		 'opcode)))
-    ;; (tmwchat-log (format "opcode: %s" opcode))
-    (cond ((= opcode #x7531)
-	   (let ((info (bindat-unpack tmwchat--server-version-spec packet))
-		 (password (if (zerop (length tmwchat-password))
-			       (read-string "TMW password:")
-			     tmwchat-password)))
-	     (setq tmwchat--tmwa-version
-		   (logior
-		    (ash (bindat-get-field info 'b1) 16)
-		    (ash (bindat-get-field info 'b2) 8)
-		    (bindat-get-field info 'b3))
-	           tmwchat--tmwa-options (bindat-get-field info 'options))
-	     (process-send-string
-	      process
-	      (bindat-pack tmwchat--login-request-spec
-			   (list (cons 'opcode #x64)
-				 (cons 'client-ver 0)
-				 (cons 'username tmwchat-username)
-				 (cons 'password password)
-				 (cons 'flags 3))))))
-	  ((= opcode #x63)
-	   (let* ((update-host-info (bindat-unpack tmwchat--update-host-spec packet))
-		  (uhi-length (bindat-length tmwchat--update-host-spec update-host-info))
-		  (login-response-info (bindat-unpack tmwchat--login-response-spec
-						      packet uhi-length)))
-	     (setq tmwchat--update-host (bindat-get-field update-host-info 'host)
-		   ;; (setq tmwchat--charserv-host (bindat-ip-to-string (bindat-get-field login-response-info 'worlds 0 'address)))
-		   tmwchat--charserv-host tmwchat-server-host
-		   tmwchat--charserv-port (bindat-get-field login-response-info 'worlds 0 'port)
-		   tmwchat--account (bindat-get-field login-response-info 'account)
-		   tmwchat--session1 (bindat-get-field login-response-info 'session1)
-		   tmwchat--session2 (bindat-get-field login-response-info 'session2))
-	     (when tmwchat-debug
-	       (tmwchat-log (format "%s\n%s" update-host-info login-response-info)))
-	     (delete-process process)))
-	  ((= opcode #x6a)
-	   (let ((info (bindat-unpack tmwchat--login-error-spec packet)))
-	     (error "Login error (%s): %s"
-		    (bindat-get-field info 'date)
-		    (cdr (assoc (bindat-get-field info 'code)
-				tmwchat-login-error)))))
-	  (t (error "Unknown opcode %s" opcode)))))
+  (dispatch packet tmwchat--loginsrv-packets))
       
 (defun tmwchat--loginsrv-sentinel-function (process event)
   (when (string-equal event "deleted\n")
       (tmwchat--connect-char-server tmwchat--charserv-host tmwchat--charserv-port)))
 
+;;==================================================================================
+(defconst tmwchat--charserv-packets
+  '((#x8000   2      ignore)
+    (#x6b    ((len           u16r)
+	      (slots         u16r)
+	      (version       u8)
+	      (fill          17)
+	      (chars  repeat (eval (/ (- (bindat-get-field struct 'len) 24) 106))
+			     (id       vec   4)
+			     (fill          54)
+			     (level       u16r)
+			     (fill          14)
+			     (name    strz  24)
+			     (fill           6)
+			     (slot          u8)
+			     (fill           1)))
+	     select-char)
+    (#x6c   ((code          u8))  charserv-error)
+    (#x71   ((char-id   vec 4)
+	     (map-name strz 16)
+	     (address       ip)
+	     (port          u16r))
+	    char-map-info)))
 
-;;----------------------------------------------------------------------
-(defconst tmwchat--connect-charserv-spec
-  '((opcode        u16r)    ;; #x65
-    (account       vec 4)
-    (session1      vec 4)
-    (session2      vec 4)
-    (proto         u16r)
-    (gender        u8)))
+(defun select-char (info)
+  (defun find-charslot (name chars)
+    (if chars
+	(let ((char-info (car chars)))
+	  (if (string-equal name (cdr (assoc 'name char-info)))
+	      (cdr (assoc 'slot char-info))
+	    (find-charslot name (cdr chars))))
+      (error "Charname %s not found" name)))
+  (let ((spec  '((opcode        u16r)
+		 (slot          u8)))
+	(charslot tmwchat-charslot))
+    (unless (eq (length tmwchat-charname) 0)
+      (setq charslot
+	    (find-charslot
+	     tmwchat-charname
+	     (bindat-get-field info 'chars))))
+    (tmwchat-send-packet spec
+			 (list (cons 'opcode #x66)
+			       (cons 'slot charslot)))))
 
-(defconst tmwchat--connect-charserv-response-spec
-  '((opcode        u16r)     ;; #x6b
-    (len           u16r)
-    (slots         u16r)
-    (version       u8)
-    (fill          17)
-    (chars         repeat (eval (/ (- (bindat-get-field struct 'len) 24) 106))
-		   (id       vec   4)
-		   (fill          54)
-		   (level       u16r)
-		   (fill          14)
-		   (name    strz  24)
-		   (fill           6)
-		   (slot          u8)
-		   (fill           1))))
+(defun charserv-error (info)
+  (let ((code (bindat-get-field info 'code)))
+    (error "Charserv error: %s" code)))
 
-(defconst tmwchat--select-char-spec
-  '((opcode        u16r)    ;; #x66
-    (slot          u8)))
-
-(defconst tmwchat--connect-charserv-error-spec
-  '((opcode        u16r)
-    (code          u8)))
-
-(defconst tmwchat--charserv-mapinfo-spec
-  '((opcode        u16r)    ;; #x71
-    (char-id       vec 4)
-    (map-name      strz 16)
-    (address       ip)
-    (port          u16r)))
-
-(defun tmwchat--find-charslot (name chars)
-  (if chars
-      (let ((char-info (car chars)))
-	(if (string-equal name (cdr (assoc 'name char-info)))
-	    (cdr (assoc 'slot char-info))
-	  (tmwchat--find-charslot name (cdr chars))))
-    (error "Charname %s not found" name)))
+(defun char-map-info (info)
+  (setq tmwchat--char-id (bindat-get-field info 'char-id)
+	tmwchat--mapserv-host tmwchat-server-host
+	tmwchat--mapserv-port (bindat-get-field info 'port))
+  (delete-process tmwchat--client-process))
 
 (defun tmwchat--connect-char-server (server port)
-  (let ((process (open-network-stream "tmwchat" "*tmwchat*" server port
+  (let ((spec   '((opcode        u16r)    ;; #x65
+		  (account       vec 4)
+		  (session1      vec 4)
+		  (session2      vec 4)
+		  (proto         u16r)
+		  (gender        u8)))
+	(process (open-network-stream "tmwchat" "*tmwchat*" server port
 				      :type 'plain)))
     (unless (processp process)
       (error "Connection attempt failed"))
@@ -318,73 +281,22 @@
     (set-process-coding-system process 'binary 'binary)
     (set-process-filter process 'tmwchat--charserv-filter-function)
     (set-process-sentinel process 'tmwchat--charserv-sentinel-function)
-    (process-send-string
-     process
-     (bindat-pack tmwchat--connect-charserv-spec
-		   (list (cons 'opcode #x65)
-		    (cons 'account tmwchat--account)
-		    (cons 'session1 tmwchat--session1)
-		    (cons 'session2 tmwchat--session2)
-		    (cons 'proto 1)
-		    (cons 'gender tmwchat--gender))))))
+    (tmwchat-send-packet spec
+			 (list (cons 'opcode #x65)
+			       (cons 'account tmwchat--account)
+			       (cons 'session1 tmwchat--session1)
+			       (cons 'session2 tmwchat--session2)
+			       (cons 'proto 1)
+			       (cons 'gender tmwchat--gender)))))
 
 (defun tmwchat--charserv-filter-function (process packet)
-  (let ((opcode (bindat-get-field
-		 (bindat-unpack tmwchat--u16-spec packet)
-		 'opcode)))
-    ;; (tmwchat-log (format "opcode: %s" opcode))
-    (cond
-     ((and (> (length packet) 4) (= opcode #x8000))
-      (tmwchat--charserv-filter-function
-       process
-       (substring packet 4)))
-     ((= opcode #x6b)
-      (let ((charslot tmwchat-charslot)
-	    (info (bindat-unpack tmwchat--connect-charserv-response-spec packet)))
-	(when tmwchat-debug
-	  (tmwchat-log "%s" info))
-	(unless (eq (length tmwchat-charname) 0)
-	  (setq charslot
-		(tmwchat--find-charslot
-		 tmwchat-charname
-		 (bindat-get-field info 'chars))))
-	(process-send-string
-	 process
-	 (bindat-pack tmwchat--select-char-spec
-		      (list (cons 'opcode #x66)
-			    (cons 'slot charslot))))))
-     ((= opcode #x6c)
-      (let ((info (bindat-unpack tmwchat--connect-charserv-error-spec packet)))
-	(error "charserv connect error")))
-     ((= opcode #x71)
-      (let ((info (bindat-unpack tmwchat--charserv-mapinfo-spec packet)))
-	(setq tmwchat--char-id (bindat-get-field info 'char-id)
-	      ;; tmwchat--mapserv-host (bindat-ip-to-string (bindat-get-field info 'address))
-	      tmwchat--mapserv-host tmwchat-server-host
-	      tmwchat--mapserv-port (bindat-get-field info 'port))
-	(when tmwchat-debug
-	  (tmwchat-log (format "%s" info))))
-      (delete-process process)))))
+  (dispatch packet tmwchat--charserv-packets))
 
 (defun tmwchat--charserv-sentinel-function (process event)
   (when (string-equal event "deleted\n")
       (tmwchat--connect-map-server tmwchat--mapserv-host tmwchat--mapserv-port)))
 
 ;;=================================================================================
-(defconst tmwchat--connect-mapserv-spec
-  '((opcode        u16r)    ;; #x72
-    (account       vec 4)
-    (char-id       vec 4)
-    (session1      vec 4)
-    (session2      vec 4)
-    (gender        u8)))
-
-(defconst tmwchat--connect-mapserv-response-spec
-  '((opcode        u16r)    ;; #x73
-    (fill          4)       ;; tick
-    (coor    vec   3 u8)
-    (fill          2)))
-
 (defconst tmwchat--mapserv-packets
   '((#x08a  27 being-action)
     (#x09c  7  being-change-direction)
@@ -514,10 +426,22 @@
 	    (msg   strz (eval (- (bindat-get-field struct 'len) 28))))
 	   whisper)
     (#x098 ((code         u8))
-	   whisper-response)))
+	   whisper-response)
+    (#x8000 2   ignore)
+    (#x73   ((tick vec 4)
+	     (coor vec 3)
+	     (fill     2))
+	    mapserv-connected)
+    ))
 
 (defun tmwchat--connect-map-server (server port)
-  (let ((process (open-network-stream "tmwchat" "*tmwchat*" server port
+  (let ((spec '((opcode        u16r)    ;; #x72
+		(account       vec 4)
+		(char-id       vec 4)
+		(session1      vec 4)
+		(session2      vec 4)
+		(gender        u8)))
+	(process (open-network-stream "tmwchat" "*tmwchat*" server port
 				      :type 'plain)))
     (unless (processp process)
       (error "Connection attempt failed"))
@@ -528,15 +452,13 @@
     (set-process-sentinel process 'tmwchat--mapserv-sentinel-function)
     (setq tmwchat--ping-timer (run-at-time 15 15 'tmwchat--ping))
     (setq tmwchat--fetch-online-list-timer (run-at-time 5 30 'tmwchat--online-list))
-    (process-send-string
-     process
-     (bindat-pack tmwchat--connect-mapserv-spec
-		  (list (cons 'opcode #x72)
-			(cons 'account tmwchat--account)
-			(cons 'char-id tmwchat--char-id)
-			(cons 'session1 tmwchat--session1)
-			(cons 'session2 tmwchat--session2)
-			(cons 'gender tmwchat--gender))))))
+    (tmwchat-send-packet spec
+			 (list (cons 'opcode #x72)
+			       (cons 'account tmwchat--account)
+			       (cons 'char-id tmwchat--char-id)
+			       (cons 'session1 tmwchat--session1)
+			       (cons 'session2 tmwchat--session2)
+			       (cons 'gender tmwchat--gender)))))
 
 (defun tmwchat--mapserv-sentinel-function (process event)
   (if (string-equal event "deleted\n")
@@ -546,53 +468,7 @@
   (cancel-timer tmwchat--fetch-online-list-timer))
 
 (defun tmwchat--mapserv-filter-function (process packet)
-  "The process filter for TMW server"
-  ;; (tmwchat-log (concat "recv:" packet))
-  (when tmwchat--partial-packet
-    (setq packet (concat tmwchat--partial-packet packet)
-	  tmwchat--partial-packet nil))
-  ;; (setq tmwchat--last-packet packet)
-  (let ((opcode (bindat-get-field
-		 (bindat-unpack tmwchat--u16-spec packet)
-		 'opcode))
-	(plength (length packet)))
-    ;; (tmwchat-log (format "opcode: %s" opcode))
-    (cond
-     ((and (> plength 4) (= opcode #x8000))
-      (tmwchat--mapserv-filter-function
-       process
-       (substring packet 4)))
-     ((= opcode #x73)
-      (let ((info (bindat-unpack tmwchat--connect-mapserv-response-spec packet)))
-	(when tmwchat-debug
-	  (tmwchat-log (format "%s" info)))
-	(tmwchat-log "Type /help <enter> to get infomation about available commands"))
-      (write-u16 #x7d))      ;; map-loaded
-     ((assoc opcode tmwchat--mapserv-packets)
-      (let ((expected-len)
-	    (parsed-data)
-	    (spec (nth 1 (assoc opcode tmwchat--mapserv-packets)))
-	    (fun (nth 2 (assoc opcode tmwchat--mapserv-packets))))
-	;; (when (eq opcode #x0fb)
-	;;   (setq tmwchat--debug-packet packet))
-	(condition-case nil
-	    (progn
-	      (if (numberp spec)
-		  (setq expected-len spec)
-		(setq parsed-data (bindat-unpack spec packet 2)
-		      expected-len (bindat-length spec parsed-data)))
-	      (unless (numberp spec)
-		(when (functionp fun)
-		  ;; (tmwchat-log (format "%s %s" fun parsed-data))
-		  (funcall fun parsed-data)))
-	      (when (> plength (+ expected-len 2))
-		(let ((new-packet (substring packet (+ expected-len 2))))
-		  (tmwchat--mapserv-filter-function
-		   process
-		   new-packet))))
-	  (args-out-of-range
-	     (setq tmwchat--partial-packet (concat tmwchat--partial-packet packet))))
-	  )))))
+  (dispatch packet tmwchat--mapserv-packets))
 
 ;;--------------------------------------------------------------------------------
 (defun being-chat (info)
@@ -665,40 +541,30 @@
 (make-variable-buffer-local 'vec-less)
 
 (defun add-being (id job)
-  (when (and (vec-less id [128 119 142 6])  ;; 110'000'000
-	     (or (<= job 25)
-		 (and (>= job 4001)
-		      (<= job 4049))))
+  (let ((spec '((opcode    u16r)
+		(id    vec 4))))
+    (when (and (vec-less id [128 119 142 6])  ;; 110'000'000
+	       (or (<= job 25)
+		   (and (>= job 4001)
+			(<= job 4049))))
       (unless (gethash id tmwchat--beings)
         ;; (tmwchat-log (format "adding being %s job %s" id job))
 	;;; actual hash table update is done when we get being-name-response
-	(process-send-string
-	 tmwchat--client-process
-	 (bindat-pack tmwchat--being-name-request-spec
-		      (list (cons 'opcode #x94)
-			    (cons 'id id)))))))
+	(tmwchat-send-packet spec
+			     (list (cons 'opcode #x94)
+				   (cons 'id id)))))))
 (make-variable-buffer-local 'add-being)
 
 (defun tmwchat--ping ()
-  (let ((process (get-process "tmwchat")))
+  (let ((spec '((opcode    u16r)
+		(id    vec 4)))
+	(process (get-process "tmwchat")))
     (when (processp process)
       (with-current-buffer (process-buffer process)
-	(process-send-string
-	 process
-	 (bindat-pack tmwchat--being-name-request-spec
-		      (list (cons 'opcode #x94)
-			    (cons 'id tmwchat--char-id))))))))
+	(tmwchat-send-packet spec
+			     (list (cons 'opcode #x94)
+				   (cons 'id tmwchat--char-id)))))))
 
-(when (or (< emacs-major-version 24)
-	  (and (= emacs-major-version 24)
-	       (< emacs-minor-version 4)))
-  (defun string-suffix-p (str1 str2 &optional ignore-case)
-    (let ((begin2 (- (length str2) (length str1)))
-	  (end2 (length str2)))
-      (when (< begin2 0) (setq begin2 0))
-      (eq t (compare-strings str1 nil nil
-			     str2 begin2 end2
-			     ignore-case)))))
 
 (defun tmwchat--online-list ()
   (defun chomp-end (str)
@@ -723,57 +589,45 @@
   (let ((url "http://server.themanaworld.org/online.txt"))
     (url-retrieve url 'callback nil t t)))
 
-(defconst tmwchat--show-emote-spec
-  '((opcode      u16r)   ;; #xbf
-    (id          u8)))
-
 (defun show-emote (id)
-  (tmwchat-log (format "(%s)" (cdr (assoc id tmwchat-emotes))))
-  (process-send-string
-   tmwchat--client-process
-   (bindat-pack tmwchat--show-emote-spec
-		(list (cons 'opcode #xbf)
-		      (cons 'id id)))))
+  (let ((spec '((opcode    u16r)
+		(id        u8))))
+    (tmwchat-log "You emote: (%s)" (cdr (assoc id tmwchat-emotes)))
+    (tmwchat-send-packet spec
+			 (list (cons 'opcode #xbf)
+			       (cons 'id id)))))
 (make-variable-buffer-local 'show-emote)
 
-(defconst tmwchat--chat-message-spec
-  '((opcode      u16r)    ;; #x8c
-    (len         u16r)
-    (msg  strz   (eval (- (bindat-get-field struct 'len) 4)))))
-
 (defun chat-message (msg)
-  (let* ((nmsg (encode-coding-string (format "%s : %s" tmwchat-charname msg) 'utf-8))
+  (let* ((spec '((opcode      u16r)    ;; #x8c
+		 (len         u16r)
+		 (msg  strz   (eval (- (bindat-get-field struct 'len) 4)))))
+	 (nmsg (encode-coding-string (format "%s : %s" tmwchat-charname msg) 'utf-8))
 	 (nlen (length nmsg)))
-    (process-send-string
-     tmwchat--client-process
-     (bindat-pack tmwchat--chat-message-spec
-		  (list (cons 'opcode #x8c)
-			(cons 'len (+ nlen 5))
-			(cons 'msg nmsg))))))
+    (tmwchat-send-packet spec
+			 (list (cons 'opcode #x8c)
+			       (cons 'len (+ nlen 5))
+			       (cons 'msg nmsg)))))
 (make-variable-buffer-local 'chat-message)
 
-(defconst tmwchat--chat-whisper-spec
-  '((opcode       u16r)    ;; #x96
-    (len          u16r)
-    (nick   strz  24)
-    (msg    strz  (eval (- (bindat-get-field struct 'len) 28)))))
-
 (defun whisper-message (nick msg)
-  (let* ((nmsg (encode-coding-string msg 'utf-8))
+  (let* ((spec  '((opcode       u16r)
+		  (len          u16r)
+		  (nick   strz  24)
+		  (msg    strz  (eval (- (bindat-get-field struct 'len) 28)))))
+	 (nmsg (encode-coding-string msg 'utf-8))
 	 (nlen (length nmsg)))
     (tmwchat--update-recent-users nick)
-    (tmwchat-log (format "[%s <-] %s" nick msg))
+    (tmwchat-log (format "[-> %s] %s" nick msg))
     (when tmwchat-whispers-to-buffers
       (tmwchat--whisper-to-buffer
        nick
        (format "[%s <-] %s" nick msg)))
-    (process-send-string
-     tmwchat--client-process
-     (bindat-pack tmwchat--chat-whisper-spec
-		  (list (cons 'opcode #x096)
-			(cons 'len (+ nlen 29))
-			(cons 'nick nick)
-			(cons 'msg nmsg))))))
+    (tmwchat-send-packet spec
+			 (list (cons 'opcode #x096)
+			       (cons 'len (+ nlen 29))
+			       (cons 'nick nick)
+			       (cons 'msg nmsg)))))
 (make-variable-buffer-local 'whisper-message)
 
 (defun player-move (info)
@@ -796,28 +650,28 @@
 	 (err (if (eq code 2)
 		  "Account already in use"
 		(format "%s" code))))
-    (tmwchat-log (format "Connection problem: %s" err))))
+    (tmwchat-log "Connection problem: %s" err)))
 
 (defun player-chat (info)
-  (let ((msg (decode-coding-string (bindat-get-field info 'msg) 'utf-8)))
+  (let ((msg
+	 (tmwchat--remove-color
+	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
     (if (string-prefix-p tmwchat-charname msg)
-	(tmwchat-log (format "%s" msg))
-      (tmwchat-log (format "Server: %s" msg)))))
+	(tmwchat-log "%s" msg)
+      (tmwchat-log "Server: %s" msg))))
 
 (defun gm-chat (info)
-  (let ((msg (decode-coding-string (bindat-get-field info 'msg) 'utf-8)))
-    (tmwchat-log (format "GM: %s" msg))))
-
-(defconst tmwchat--trade-response-spec
-  '((opcode       u16r)   ;; #xe7
-    (code         u8)))
+  (let ((msg
+	 (tmwchat--remove-color
+	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
+    (tmwchat-log "GM: %s" msg)))
 
 (defun trade-request (info)
-  (process-send-string
-   tmwchat--client-process
-   (bindat-pack tmwchat--trade-response-spec
-		(list (cons 'opcode #xe7)
-		      (cons 'code 4)))))  ;; reject
+  (let ((spec   '((opcode       u16r)
+		  (code         u8))))
+    (tmwchat-send-packet spec
+			 (list (cons 'opcode #xe7)
+			       (cons 'code 4)))))  ;; reject
 
 (defun whisper (info)
   (let ((nick (bindat-get-field info 'nick))
@@ -865,7 +719,15 @@
 		     (car (gethash id tmwchat--party-members)))
 		   (format "%s" id)))
     (tmwchat-log "[Party] %s : %s" nick msg)))
-    
+
+(defun mapserv-connected (info)
+  (let ((tick (bindat-get-field info 'tick))
+	(coor (bindat-get-field info 'coor)))
+    (when tmwchat-debug
+      (tmwchat-log "mapserv-connected  tick=%s coor=%s"
+		   tick coor))
+    (tmwchat-log "Type /help <enter> to get infomation about available commands")
+    (write-u16 #x7d)))  ;; map-loaded
 
 (defun tmwchat-time ()
   (let ((date (format-time-string "%D")))
@@ -1130,6 +992,12 @@
   (mapc (lambda (f)
 	  (make-variable-buffer-local (nth 2 f)))
 	tmwchat--mapserv-packets)
+  (mapc (lambda (f)
+	  (make-variable-buffer-local (nth 2 f)))
+	tmwchat--loginsrv-packets)
+  (mapc (lambda (f)
+	  (make-variable-buffer-local (nth 2 f)))
+	tmwchat--charserv-packets)  
   )
 
 ;;;###autoload
@@ -1151,7 +1019,7 @@
     (setq tmwchat-sent (tmwchat-readin))
     (newline)
     ;; (setq tmwchat--start-point (point))
-    (tmwchat-process)
+    (tmwchat-parse-input)
     ;; (newline)
     ))
 
@@ -1172,7 +1040,7 @@
       (cons (substring msg 0 m)
 	    (substring msg (+ m 1))))))
 
-(defun tmwchat-process ()
+(defun tmwchat-parse-input ()
   (cond
    ((string-equal tmwchat-sent "/help")
     (tmwchat-log
