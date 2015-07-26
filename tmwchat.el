@@ -26,7 +26,7 @@
   :type 'string)
 
 (defcustom tmwchat-password ""
-  "TMW password"
+  "TMW password. If it's not set, the user will be asked for it"
   :group 'tmwchat
   :type 'string)
 
@@ -36,7 +36,7 @@
   :type 'string)
 
 (defcustom tmwchat-charslot 0
-  "TMW character slot"
+  "TMW character slot. Ignored when `tmw-charname' was set"
   :group 'tmwchat
   :type 'integer)
 
@@ -66,7 +66,7 @@
   :type 'boolean)
 
 (defcustom tmwchat-away-message "*AFK*: I am away from keyboard"
-  "TMW password"
+  "TMW AFK message"
   :group 'tmwchat
   :type 'string)
 
@@ -214,7 +214,10 @@
 		 'opcode)))
     ;; (tmwchat-log (format "opcode: %s" opcode))
     (cond ((= opcode #x7531)
-	   (let ((info (bindat-unpack tmwchat--server-version-spec packet)))
+	   (let ((info (bindat-unpack tmwchat--server-version-spec packet))
+		 (password (if (zerop (length tmwchat-password))
+			       (read-string "TMW password:")
+			     tmwchat-password)))
 	     (setq tmwchat--tmwa-version
 		   (logior
 		    (ash (bindat-get-field info 'b1) 16)
@@ -227,7 +230,7 @@
 			   (list (cons 'opcode #x64)
 				 (cons 'client-ver 0)
 				 (cons 'username tmwchat-username)
-				 (cons 'password tmwchat-password)
+				 (cons 'password password)
 				 (cons 'flags 3))))))
 	  ((= opcode #x63)
 	   (let* ((update-host-info (bindat-unpack tmwchat--update-host-spec packet))
