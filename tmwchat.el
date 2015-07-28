@@ -1,5 +1,6 @@
 (require 'bindat)
 (require 'cl)
+(require 'subr-x)
 (require 'todochiku)
 (require 'tmwchat-network)
 (require 'tmwchat-speedbar)
@@ -464,8 +465,17 @@
   (if (string-equal event "deleted\n")
       (message "Exited successfully")
     (error event))
-  (cancel-timer tmwchat--ping-timer)
-  (cancel-timer tmwchat--fetch-online-list-timer))
+  (tmwchat--cleanup))
+
+(defun tmwchat--cleanup ()
+  (when (timerp tmwchat--ping-timer)
+    (cancel-timer tmwchat--ping-timer))
+  (when (timerp tmwchat--fetch-online-list-timer)
+    (cancel-timer tmwchat--fetch-online-list-timer))
+  (when (processp tmwchat--client-process)
+    (delete-process tmwchat--client-process))
+  (clrhash tmwchat--beings)
+  (clrhash tmwchat--party-members))
 
 (defun tmwchat--mapserv-filter-function (process packet)
   (dispatch packet tmwchat--mapserv-packets))
@@ -557,13 +567,13 @@
 
 (defun tmwchat--ping ()
   (let ((spec '((opcode    u16r)
-		(id    vec 4)))
+		(tick  vec 4)))
 	(process (get-process "tmwchat")))
     (when (processp process)
       (with-current-buffer (process-buffer process)
 	(tmwchat-send-packet spec
-			     (list (cons 'opcode #x94)
-				   (cons 'id tmwchat--char-id)))))))
+			     (list (cons 'opcode #x7e)
+				   (cons 'tick   tmwchat--tick)))))))
 
 
 (defun tmwchat--online-list ()
@@ -873,7 +883,7 @@
   (interactive "sString:")
   (let ((urls-found)
 	(href) (label)
-	(regex "\\[@@\\([^|]+\\)|\\([^@]+\\)@@\\]"))
+	(regex "@@\\([^|]+\\)|\\([^@]+\\)@@"))
     (while (string-match regex str)
       (setq href (substring str (match-beginning 1) (match-end 1))
 	    label (substring str (match-beginning 2) (match-end 2)))
@@ -897,12 +907,16 @@
 
 ;;----------------------------------------------------------------------
 (defun tmwchat--find-nick-completion ()
-  (defun get-online-list ()
-    tmwchat-online-users)
+  (defun completion-list ()
+    (union
+     (hash-table-values tmwchat--beings)
+     (union
+      tmwchat-online-users
+      (ring-elements tmwchat-recent-users))))
   (defun filter (condp lst)
     (delq nil
 	  (mapcar (lambda (x) (and (funcall condp x) x)) lst)))
-  (let ((onl (get-online-list))
+  (let ((onl (completion-list))
 	(len 3)
 	(partial)
 	(nick)
@@ -989,6 +1003,7 @@
   (set (make-local-variable 'tmwchat--fetch-online-list-timer) nil)
   (set (make-local-variable 'tmwchat--last-whisper-nick) nil)
   (set (make-local-variable 'tmwchat--ping-timer) nil)
+  (set (make-local-variable 'tmwchat--tick) [0 0 0 1])
   (mapc (lambda (f)
 	  (make-variable-buffer-local (nth 2 f)))
 	tmwchat--mapserv-packets)

@@ -104,8 +104,8 @@
 		      (bindat-get-field
 		       (bindat-unpack '((fill 2) (len u16r)) packet)
 		       'len)))
-	      (when (> plength (+ expected-len 2))
-		(let ((new-packet (substring packet (+ expected-len 2))))
+	      (when (> plength expected-len)
+		(let ((new-packet (substring packet expected-len)))
 		 (dispatch new-packet packet-specs))))
 	  (args-out-of-range
 	   (setq tmwchat--partial-packet (concat tmwchat--partial-packet packet)))))))))
