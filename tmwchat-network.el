@@ -104,6 +104,8 @@
 		      (bindat-get-field
 		       (bindat-unpack '((fill 2) (len u16r)) packet)
 		       'len)))
+	      (when (eq expected-len 0)
+		(setq expected-len 2))
 	      (when (> plength expected-len)
 		(let ((new-packet (substring packet expected-len)))
 		 (dispatch new-packet packet-specs))))

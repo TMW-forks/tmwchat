@@ -99,6 +99,14 @@
 	(124 . "Mimi")      (125 . "Alien")      (126 . "Troll")
 	(127 . "Metal")     (128 . "Crying")))
 
+(defconst tmwchat-emotes-2
+  [":-D" ":-)" ";-)" ":-(" ":-o" ":-|" ":-/" "B-)" ":-D" ":-[" ":-P"
+   "*blush*" ":'-(" "*evil grin*" "*weird emote*" "*ninja*" ":-)" "*star*" "*?*" "*!*" "*idea*" "*->*"
+   "*heart*" "^_^" ":-)" ";-)" ":-(" ":-O" ":-(" "*mimi*" "*epic*" "*32 teeth*" "*perturbed*"
+   ":-P" "*shame*" "*sad*" "*evil*" "0_o" "*ninja*" "*bad geek*" "*star*" "*?*" "*!*" "*bubble*"
+   "*look away*" "*in love*" "*disgust*" "*devil*" "*upset*" "xD" "u.u" "x_x" "*facepalm*" "*evvil*" "*angry*"
+   "*epic*" "*metal*" "*crying*" "*...*" "*@:=*" "*cat*" "*sleeping*" "-.-'" "*alien*"])
+
 (defconst tmwchat-login-error
   '((0 . "Unregistered ID.")
     (1 . "Wrong password.")
@@ -318,7 +326,9 @@
 	      (job        u16r)
 	      (fill       44))
 	    being-move)
-    (#x086  14 being-move-2)
+    (#x086  ((id         vec 4)
+	     (fill          10))
+	     being-move-2)
     (#x095  ((id         vec 4)
 	      (name  strz 24))
 	    being-name-response)
@@ -392,6 +402,10 @@
 	      (fill       37))
 	    player-update-2)
     (#x091 20 player-warp)
+    (#x020 ((id        vec 4)
+	    (addr         ip))
+	   ip-response)
+    (#x19a 12  pvp-set)
     (#x081 ((code         u8))
 	   connection-problem)
     (#x09a ((len          u16r)
@@ -506,6 +520,11 @@
 (defun being-move (info)
   (let ((id (bindat-get-field info 'id))
 	(job (bindat-get-field info 'job)))
+    (add-being id job)))
+
+(defun being-move-2 (info)
+  (let ((id (bindat-get-field info 'id))
+	(job 1))
     (add-being id job)))
 
 (defun being-name-response (info)
@@ -825,8 +844,16 @@
 	(play-sound-file sound)))))
 
 (defun tmwchat--remove-color (str)
-  (while (string-match "##[0-9]" str)
+  (while (string-match "##[0-9bB]" str)
     (setq str (replace-match "" nil nil str)))
+  (ignore-errors
+    (let ((beg) (code) (emote))
+      (while (setq beg (string-match "%%[^%]" str))
+	(setq code (- (elt str (+ beg 2)) 48)
+	      emote (elt tmwchat-emotes-2 code)
+	      str (replace-match emote nil nil str)))))
+  (let ((splt (split-string str "%")))
+    (setq str (mapconcat 'identity splt "%%")))
   str)
 
 (defun tmwchat--replace-whisper-cmd (nick)
@@ -1022,6 +1049,7 @@
   (switch-to-buffer "*tmwchat*")
   (tmwchat-mode)
   (setq debug-on-error t)
+  (setq max-lisp-eval-depth 4096)
   (setq truncate-lines nil)
   (setq tmwchat--frame (selected-frame))
   (setq tmwchat--window (selected-window))
