@@ -647,7 +647,8 @@
 	 (nmsg (encode-coding-string msg 'utf-8))
 	 (nlen (length nmsg)))
     (tmwchat--update-recent-users nick)
-    (tmwchat-log (format "[-> %s] %s" nick msg))
+    (setq msg (tmwchat-escape-percent msg))
+    (tmwchat-log "[-> %s] %s" nick msg)
     (when tmwchat-whispers-to-buffers
       (tmwchat--whisper-to-buffer
        nick
@@ -747,6 +748,7 @@
     (setq nick (or (ignore-errors
 		     (car (gethash id tmwchat--party-members)))
 		   (format "%s" id)))
+    (setq msg (tmwchat--remove-color msg))
     (tmwchat-log "[Party] %s : %s" nick msg)))
 
 (defun mapserv-connected (info)
@@ -843,6 +845,10 @@
       (when tmwchat-sound
 	(play-sound-file sound)))))
 
+(defun tmwchat-escape-percent (str)
+  (let ((splt (split-string str "%")))
+    (mapconcat 'identity splt "%%")))
+
 (defun tmwchat--remove-color (str)
   (while (string-match "##[0-9bB]" str)
     (setq str (replace-match "" nil nil str)))
@@ -852,8 +858,7 @@
 	(setq code (- (elt str (+ beg 2)) 48)
 	      emote (elt tmwchat-emotes-2 code)
 	      str (replace-match emote nil nil str)))))
-  (let ((splt (split-string str "%")))
-    (setq str (mapconcat 'identity splt "%%")))
+  (setq str (tmwchat-escape-percent str))
   str)
 
 (defun tmwchat--replace-whisper-cmd (nick)
