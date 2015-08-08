@@ -4,6 +4,7 @@
 (require 'todochiku)
 (require 'tmwchat-network)
 (require 'tmwchat-speedbar)
+(require 'tmwchat-log)
 
 ;;------------------------------------------------------------------
 ;; Customizable settings
@@ -505,7 +506,8 @@
 	      (msg2 (tmwchat--remove-color msg)))
 	  (when (tmwchat--notify-filter msg2)
 	    (tmwchat--notify sender msg2))
-	  (tmwchat-log (format "%s: %s" sender msg2)))
+	  (tmwchat-log (format "%s: %s" sender msg2))
+	  (tmwchat-log-file "#General" (format "%s: %s" sender msg2)))
       (progn
 	(setq tmwchat--late-id id
 	      tmwchat--late-msg msg)
@@ -537,7 +539,9 @@
       (let ((msg (tmwchat--remove-color tmwchat--late-msg)))
 	(when (tmwchat--notify-filter msg)
 	  (tmwchat--notify name msg))
-	(tmwchat-log (format "%s: %s" name msg))))))
+	(tmwchat-log (format "%s: %s" name msg))
+	(tmwchat-log-file name (format "%s : %s" name msg))
+	))))
 
 (defun being-visible (info)
   (let ((id (bindat-get-field info 'id))
@@ -649,6 +653,7 @@
     (tmwchat--update-recent-users nick)
     (setq msg (tmwchat-escape-percent msg))
     (tmwchat-log "[-> %s] %s" nick msg)
+    (tmwchat-log-file nick (format "[-> %s] %s" nick msg))
     (when tmwchat-whispers-to-buffers
       (tmwchat--whisper-to-buffer
        nick
@@ -687,14 +692,22 @@
 	 (tmwchat--remove-color
 	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
     (if (string-prefix-p tmwchat-charname msg)
-	(tmwchat-log "%s" msg)
-      (tmwchat-log "Server: %s" msg))))
+	(progn
+	  (tmwchat-log "%s" msg)
+	  (tmwchat-log-file "#General" msg))
+      (progn
+	(tmwchat--notify "Server" msg)
+	(tmwchat-log "Server: %s" msg)
+	(tmwchat-log-file "#General" (format "Server : %s" message))))))
 
 (defun gm-chat (info)
   (let ((msg
 	 (tmwchat--remove-color
 	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
-    (tmwchat-log "GM: %s" msg)))
+    (tmwchat--notify "GM" msg)
+    (tmwchat-log "GM: %s" msg)
+    (tmwchat-log-file "#General" (format "GM: %s" msg))
+    ))
 
 (defun trade-request (info)
   (let ((spec   '((opcode       u16r)
@@ -713,6 +726,7 @@
       (unless (string-equal nick "guild")
 	(tmwchat--notify nick msg))
       (tmwchat-log (format "[%s ->] %s" nick msg))
+      (tmwchat-log-file nick (format "[%s ->] %s" nick msg))
       (when (and tmwchat--away
 		 (not (string-equal nick "guild")))
 	(whisper-message nick tmwchat-away-message))
@@ -749,7 +763,9 @@
 		     (car (gethash id tmwchat--party-members)))
 		   (format "%s" id)))
     (setq msg (tmwchat--remove-color msg))
-    (tmwchat-log "[Party] %s : %s" nick msg)))
+    (tmwchat-log "[Party] %s : %s" nick msg)
+    (tmwchat-log-file "#Party" (format "%s : %s" nick msg))
+    ))
 
 (defun mapserv-connected (info)
   (let ((tick (bindat-get-field info 'tick))
