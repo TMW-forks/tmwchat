@@ -16,7 +16,7 @@ logs are not written to files"
 	   (filename (concat dir "/" nick ".txt")))
       (make-directory dir t)
       (setq msg (format "[%s] %s" (tmwchat-time) msg))
-      (let ((message (lambda (&rest args) t)))
+      (let ((message-log-max nil))
 	(append-to-file msg nil filename)))))
 
 (provide 'tmwchat-log)

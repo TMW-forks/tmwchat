@@ -192,7 +192,7 @@
 		    tmwchat-password)))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x64)
-			       (cons 'client-ver 0)
+			       (cons 'client-ver 201)
 			       (cons 'username tmwchat-username)
 			       (cons 'password password)
 			       (cons 'flags 3)))))
@@ -498,20 +498,20 @@
 ;;--------------------------------------------------------------------------------
 (defun being-chat (info)
   (let ((id (bindat-get-field info 'id))
-	(msg (decode-coding-string
-	      (bindat-get-field info 'msg)
-	      'utf-8)))
-    (if (gethash id tmwchat--beings)
-	(let ((sender (being-name id))
-	      (msg2 (tmwchat--remove-color msg)))
-	  (when (tmwchat--notify-filter msg2)
-	    (tmwchat--notify sender msg2))
-	  (tmwchat-log (format "%s: %s" sender msg2))
-	  (tmwchat-log-file "#General" (format "%s: %s" sender msg2)))
-      (progn
-	(setq tmwchat--late-id id
-	      tmwchat--late-msg msg)
-	(add-being id 1)))))
+	(msg (bindat-get-field info 'msg)))
+    (unless (tmwchat--contains-302-202 msg)
+      (setq msg (decode-coding-string msg 'utf-8))
+      (if (gethash id tmwchat--beings)
+	  (let ((sender (being-name id))
+		(msg2 (tmwchat--remove-color msg)))
+	    (when (tmwchat--notify-filter msg2)
+	      (tmwchat--notify sender msg2))
+	    (tmwchat-log (format "%s: %s" sender msg2))
+	    (tmwchat-log-file "#General" (format "%s: %s" sender msg2)))
+	(progn
+	  (setq tmwchat--late-id id
+		tmwchat--late-msg msg)
+	  (add-being id 1))))))
 
 (defun being-emotion (info)
   (let ((emote-repr (cdr (assoc (bindat-get-field info 'emote) tmwchat-emotes)))
@@ -688,26 +688,27 @@
     (tmwchat-log "Connection problem: %s" err)))
 
 (defun player-chat (info)
-  (let ((msg
-	 (tmwchat--remove-color
-	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
-    (if (string-prefix-p tmwchat-charname msg)
+  (let ((msg (bindat-get-field info 'msg)))
+    (unless (tmwchat--contains-302-202 msg)
+      (setq msg (tmwchat--remove-color
+		 (decode-coding-string msg 'utf-8)))
+      (if (string-prefix-p tmwchat-charname msg)
+	  (progn
+	    (tmwchat-log "%s" msg)
+	    (tmwchat-log-file "#General" msg))
 	(progn
-	  (tmwchat-log "%s" msg)
-	  (tmwchat-log-file "#General" msg))
-      (progn
-	(tmwchat--notify "Server" msg)
-	(tmwchat-log "Server: %s" msg)
-	(tmwchat-log-file "#General" (format "Server : %s" message))))))
+	  (tmwchat--notify "Server" msg)
+	  (tmwchat-log "Server: %s" msg)
+	  (tmwchat-log-file "#General" (format "Server : %s" msg)))))))
 
 (defun gm-chat (info)
-  (let ((msg
-	 (tmwchat--remove-color
-	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
-    (tmwchat--notify "GM" msg)
-    (tmwchat-log "GM: %s" msg)
-    (tmwchat-log-file "#General" (format "GM: %s" msg))
-    ))
+  (let ((msg (bindat-get-field info 'msg)))
+    (unless (tmwchat--contains-302-202 msg)
+      (setq msg (tmwchat--remove-color
+		 (decode-coding-string msg 'utf-8)))
+      (tmwchat--notify "GM" msg)
+      (tmwchat-log "GM: %s" msg)
+      (tmwchat-log-file "#General" (format "GM: %s" msg)))))
 
 (defun trade-request (info)
   (let ((spec   '((opcode       u16r)
@@ -718,20 +719,21 @@
 
 (defun whisper (info)
   (let ((nick (bindat-get-field info 'nick))
-	(msg
-	 (tmwchat--remove-color
-	  (decode-coding-string (bindat-get-field info 'msg) 'utf-8))))
-    (unless (string-prefix-p "!selllist" msg)
-      (tmwchat--update-recent-users nick)
-      (unless (string-equal nick "guild")
-	(tmwchat--notify nick msg))
-      (tmwchat-log (format "[%s ->] %s" nick msg))
-      (tmwchat-log-file nick (format "[%s ->] %s" nick msg))
-      (when (and tmwchat--away
-		 (not (string-equal nick "guild")))
-	(whisper-message nick tmwchat-away-message))
-      (when tmwchat-whispers-to-buffers
-	(tmwchat--whisper-to-buffer nick (format "[%s ->] %s" nick msg))))))
+	(msg (bindat-get-field info 'msg)))
+    (unless (tmwchat--contains-302-202 msg)
+      (setq msg (tmwchat--remove-color
+		 (decode-coding-string msg 'utf-8)))
+      (unless (string-prefix-p "!selllist" msg)
+	(tmwchat--update-recent-users nick)
+	(unless (string-equal nick "guild")
+	  (tmwchat--notify nick msg))
+	(tmwchat-log (format "[%s ->] %s" nick msg))
+	(tmwchat-log-file nick (format "[%s ->] %s" nick msg))
+	(when (and tmwchat--away
+		   (not (string-equal nick "guild")))
+	  (whisper-message nick tmwchat-away-message))
+	(when tmwchat-whispers-to-buffers
+	  (tmwchat--whisper-to-buffer nick (format "[%s ->] %s" nick msg)))))))
 
 (defun whisper-response (info)
   (let ((code (bindat-get-field info 'code)))
@@ -952,6 +954,11 @@
 	    m+url (format "[@@%s|%s@@]" url link)
 	    str (replace-match m+url t t str 1)))
     (substring str 1)))
+
+(defun tmwchat--contains-302-202 (str)
+  "Check if string contains ManaPlus-specific messages with \302\202
+   that breaks utf8 decoding"
+   (string-match-p ": #o302#o202" str))
 
 ;;----------------------------------------------------------------------
 (defun tmwchat--find-nick-completion ()
