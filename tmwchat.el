@@ -168,8 +168,7 @@
 	      (last-login    strz 24)
 	      (fill          2)
 	      (gender        u8)
-	      (num-worlds    (eval (/ (- (bindat-get-field struct 'len) 47) 32)))
-	      (worlds        repeat (num-worlds)
+	      (worlds  repeat  ((eval (/ (- (bindat-get-field struct 'len) 47) 32)))
 			     (address       ip)
 			     (port          u16r)
 			     (name          strz 20)
@@ -384,7 +383,10 @@
     (#x0bd  42 player-stat-update-5)
     (#x0be  3  player-stat-update-6)
     (#x119  11 player-status-change)
-    (#x088  1  player-stop)
+    (#x088  ((id         vec 4)
+	     (x           u16r)
+	     (y           u16r))
+	    player-stop)
     (#x0ac  5  player-unequip)
     (#x1d8  ((id        vec 4)
 	      (speed      u16r)
@@ -448,6 +450,7 @@
 	     (coor vec 3)
 	     (fill     2))
 	    mapserv-connected)
+    (#x7f   4   server-ping)
     ))
 
 (defun tmwchat--connect-map-server (server port)
@@ -615,8 +618,10 @@
 	   (strmm (substring strm 0 start)))
       (mapcar 'chomp-end (split-string strmm "\n"))))
   (defun callback (status)
-    (let ((data (buffer-string)))
-      (setq tmwchat-online-users (gen-list data))
+    (let ((onl)
+	  (data (buffer-string)))
+      (setq onl (gen-list data))
+      (setq tmwchat-online-users (copy-sequence onl))
       (setq tmwchat--speedbar-dirty t)
       (kill-buffer (current-buffer))))
   (let ((url "http://server.themanaworld.org/online.txt"))
@@ -964,10 +969,8 @@
 (defun tmwchat--find-nick-completion ()
   (defun completion-list ()
     (union
-     (hash-table-values tmwchat--beings)
-     (union
-      tmwchat-online-users
-      (ring-elements tmwchat-recent-users))))
+     tmwchat-online-users
+     (ring-elements tmwchat-recent-users)))
   (defun filter (condp lst)
     (delq nil
 	  (mapcar (lambda (x) (and (funcall condp x) x)) lst)))
