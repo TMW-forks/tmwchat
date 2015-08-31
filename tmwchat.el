@@ -136,7 +136,9 @@
 (setq tmwchat--late-id 0)
 (setq tmechat--late-msg "")
 (setq tmwchat--away nil)
-(setq tmwchat-online-users nil)
+(setq tmwchat--online-list-0 nil)
+(setq tmwchat--online-list-1 nil)
+(setq tmwchat--online-list-number 0)
 
 (defun tmwchat-start-client (server port)
   (let ((process (open-network-stream "tmwchat" "*tmwchat*" server port
@@ -602,6 +604,22 @@
 				   (cons 'tick   tmwchat--tick)))))))
 
 
+(defun tmwchat-set-online-users (users-list)
+  (cond
+   ((= tmwchat--online-list-number 0)
+    (setq tmwchat--online-list-number 1
+	  tmwchat--online-list-0 users-list))
+   ((= tmwchat--online-list-number 1)
+    (setq tmwchat--online-list-number 0
+	  tmwchat--online-list-1 users-list))))
+
+(defun tmwchat-get-online-users ()
+  (cond
+   ((= tmwchat--online-list-number 0)
+    tmwchat--online-list-1)
+   ((= tmwchat--online-list-number 1)
+    tmwchat--online-list-0)))
+
 (defun tmwchat--online-list ()
   (defun chomp-end (str)
     (when (string-suffix-p "(GM) " str)
@@ -621,7 +639,7 @@
     (let ((onl)
 	  (data (buffer-string)))
       (setq onl (gen-list data))
-      (setq tmwchat-online-users (copy-sequence onl))
+      (tmwchat-set-online-users onl)
       (setq tmwchat--speedbar-dirty t)
       (kill-buffer (current-buffer))))
   (let ((url "http://server.themanaworld.org/online.txt"))
@@ -969,7 +987,7 @@
 (defun tmwchat--find-nick-completion ()
   (defun completion-list ()
     (union
-     tmwchat-online-users
+     (tmwchat-get-online-users)
      (ring-elements tmwchat-recent-users)))
   (defun filter (condp lst)
     (delq nil
@@ -1130,7 +1148,7 @@
       "Any other command sends a message to the public chat"
       )))
    ((string-equal tmwchat-sent "/online")
-    (tmwchat-log (format "%s" tmwchat-online-users)))
+    (tmwchat-log (format "%s" (tmwchat-get-online-users))))
    ((string-equal tmwchat-sent "/room")
     (tmwchat-show-beings))
    ((string-equal tmwchat-sent "/sit")

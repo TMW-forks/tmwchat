@@ -35,7 +35,7 @@
 (defun tmwchat-speedbar-buttons (directory &optional depth)
   (when tmwchat--speedbar-dirty
     (let ((nearby tmwchat--beings)
-	  (online tmwchat-online-users)
+	  (online (tmwchat-get-online-users))
 	  (recent (ring-elements tmwchat-recent-users)))
       (erase-buffer)
       (speedbar-insert-separator "Nearby")
