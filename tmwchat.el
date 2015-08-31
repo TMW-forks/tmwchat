@@ -1,6 +1,6 @@
 (require 'bindat)
 (require 'cl)
-(require 'subr-x)
+;; (require 'subr-x)
 (require 'todochiku)
 (require 'tmwchat-network)
 (require 'tmwchat-speedbar)
