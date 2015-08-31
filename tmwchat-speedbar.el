@@ -57,17 +57,17 @@
 		  'tmwchat--speedbar-item-clicked
 		  nil))
 	    (sort recent 'string-lessp))
-      (speedbar-insert-separator "Social")
-      (speedbar-insert-button "Party"
-			      'speedbar-button-face
-			      'speedbar-highlight-face
-			      'tmwchat--speedbar-item-clicked
-			      nil)
-      (speedbar-insert-button "Guild"
-			      'speedbar-button-face
-			      'speedbar-highlight-face
-			      'tmwchat--speedbar-item-clicked
-			      nil)
+      ;; (speedbar-insert-separator "Social")
+      ;; (speedbar-insert-button "Party"
+      ;; 			      'speedbar-button-face
+      ;; 			      'speedbar-highlight-face
+      ;; 			      'tmwchat--speedbar-item-clicked
+      ;; 			      nil)
+      ;; (speedbar-insert-button "Guild"
+      ;; 			      'speedbar-button-face
+      ;; 			      'speedbar-highlight-face
+      ;; 			      'tmwchat--speedbar-item-clicked
+      ;; 			      nil)
       (speedbar-insert-separator (format "Online (%s)" (length online)))
       (mapc (lambda (nick)
 		 (speedbar-insert-button

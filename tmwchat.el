@@ -1018,23 +1018,14 @@
 ;;====================================================================
 (defun tmwchat-make-read-only ()
   "Make all the text in the current buffer read-only."
-  (put-text-property (point-min) (point-max) 'read-only t)
-  (put-text-property (point-min) (point-max) 'front-sticky t)
-  (put-text-property (point-min) (point-max) 'rear-nonsticky t))
-
+  (add-text-properties (point-min) tmwchat--start-point
+		       '(read-only t front-sticky t rear-nonsticky t)))
 
 (defvar tmwchat-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\r" 'tmwchat-read-print)
     (define-key map "\t" 'tmwchat-tab-complete)
-    (define-key map "\d" 'tmwchat--backspace)
     map))
-
-(defun tmwchat--backspace ()
-  (interactive)
-  ;; (message "tmwchat--backspace")
-  (unless (equal (point) tmwchat--start-point)
-    (backward-delete-char 1)))
 
 (define-derived-mode tmwchat-mode text-mode "TMWChat"
   "Major mode for TMW chat."
@@ -1192,7 +1183,7 @@
 	(setq tmwchat--last-whisper-nick nil)
 	(chat-message (tmwchat--make-urls tmwchat-sent))))))
   (delete-region tmwchat--start-point (point-max))
-  (setq tmwchat--start-point (point-max))
+  ;; (setq tmwchat--start-point (point-max))
   (when tmwchat--last-whisper-nick
     (let ((nick-q (if (string-match-p " " tmwchat--last-whisper-nick)
 		      (concat "\"" tmwchat--last-whisper-nick "\"")
@@ -1216,9 +1207,10 @@
 		    (href (nth 2 url-info)))
 		(tmwchat-make-url beg end href)))
 	    (cdr msg-l))
-      ;; (tmwchat-make-read-only)
       (newline)
-      (setq tmwchat--start-point (point))))
+      (setq tmwchat--start-point (point))
+      (tmwchat-make-read-only)
+      ))
     
   (when (processp (get-process "tmwchat"))
     (with-current-buffer (process-buffer (get-process "tmwchat"))
