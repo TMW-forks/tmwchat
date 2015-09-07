@@ -48,7 +48,7 @@
   :group 'tmwchat
   :type '(repeat string))
 
-(defcustom tmwchat-root-directory "~/.emacs.d/tmwchat"
+(defcustom tmwchat-root-directory "~/tmwchat"
   "TMWChat root directory"
   :group 'tmwchat
   :type 'string)
@@ -73,8 +73,8 @@
   :group 'tmwchat
   :type 'string)
 
-(defcustom tmwchat-whispers-to-buffers t
-  "Send whispers to separate buffers"
+(defcustom tmwchat-whispers-to-buffers nil
+  "Send whispers to separate buffers. Feature is incomplete"
   :group 'tmwchat
   :type 'boolean)
 
@@ -132,6 +132,10 @@
 (defvar tmwchat--players (make-hash-table :test 'equal))
 (defvar tmwchat--whisper-target nil)
 (defvar tmwchat--date nil)
+(defvar tmwchat--fetch-online-list-timer nil
+  "Timer for downloading online.txt")
+(defvar tmwchat--ping-timer nil
+  "Timer for sending PING to mapserv")
 (setq tmwchat--client-process nil)
 (setq tmwchat--late-id 0)
 (setq tmechat--late-msg "")
@@ -544,7 +548,7 @@
       (let ((msg (tmwchat--remove-color tmwchat--late-msg)))
 	(when (tmwchat--notify-filter msg)
 	  (tmwchat--notify name msg))
-	(tmwchat-log (format "%s: %s" name msg))
+	(tmwchat-log (format "%s : %s" name msg))
 	(tmwchat-log-file name (format "%s : %s" name msg))
 	))))
 
@@ -680,7 +684,7 @@
     (when tmwchat-whispers-to-buffers
       (tmwchat--whisper-to-buffer
        nick
-       (format "[%s <-] %s" nick msg)))
+       (format "[-> %s] %s" nick msg)))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x096)
 			       (cons 'len (+ nlen 29))
@@ -992,7 +996,7 @@
   (defun filter (condp lst)
     (delq nil
 	  (mapcar (lambda (x) (and (funcall condp x) x)) lst)))
-  (let ((onl (completion-list))
+  (let ((onl (tmwchat-get-online-users))
 	(len 3)
 	(partial)
 	(nick)
@@ -1067,9 +1071,9 @@
   ;; (set (make-local-variable 'tmwchat--late-id) nil)
   ;; (set (make-local-variable 'tmwchat--late-msg) "")
   (set (make-local-variable 'tmwchat-sent) nil)
-  (set (make-local-variable 'tmwchat--fetch-online-list-timer) nil)
+  ;; (set (make-local-variable 'tmwchat--fetch-online-list-timer) nil)
   (set (make-local-variable 'tmwchat--last-whisper-nick) nil)
-  (set (make-local-variable 'tmwchat--ping-timer) nil)
+  ;; (set (make-local-variable 'tmwchat--ping-timer) nil)
   (set (make-local-variable 'tmwchat--tick) [0 0 0 1])
   (mapc (lambda (f)
 	  (make-variable-buffer-local (nth 2 f)))
