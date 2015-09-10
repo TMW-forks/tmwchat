@@ -83,8 +83,13 @@
   :group 'tmwchat
   :type 'integer)
 
-(defcustom tmwchat-equip-items-ids nil
+(defcustom tmwchat-auto-equip-item-ids nil
   "List of item IDs to periodically equip"
+  :group 'tmwchat
+  :type '(repeat integer))
+
+(defcustom tmwchat-auto-equip-interval 15
+  "Interval betwee auto-equipping next item from `tmwchat-auto-equip-item-ids' list"
   :group 'tmwchat
   :type '(repeat integer))
 
@@ -498,7 +503,10 @@
     (set-process-coding-system process 'binary 'binary)
     (set-process-filter process 'tmwchat--mapserv-filter-function)
     (set-process-sentinel process 'tmwchat--mapserv-sentinel-function)
-    (setq tmwchat--ping-timer (run-at-time 15 15 'tmwchat--ping))
+    (setq tmwchat--ping-timer (run-at-time
+			       tmwchat-auto-equip-interval
+			       tmwchat-auto-equip-interval
+			       'tmwchat--ping))
     (setq tmwchat--random-equip-timer (run-at-time 15 15 'tmwchat-equip-random-item))
     (setq tmwchat--fetch-online-list-timer (run-at-time 5 30 'tmwchat--online-list))
     (tmwchat-send-packet spec
@@ -750,7 +758,7 @@
       (tmwchat-log "[error] Cannot find item id %d" id))))
 
 (defun tmwchat-equip-random-item (&rest items-list)
-  (setq items-list (or items-list tmwchat-equip-items-ids))
+  (setq items-list (or items-list tmwchat-auto-equip-item-ids))
   (let ((next-id (car items-list))
 	(len (length items-list)))
     (cond
@@ -1053,7 +1061,7 @@
 (defun tmwchat--contains-302-202 (str)
   "Check if string contains ManaPlus-specific messages with \302\202
    that breaks utf8 decoding"
-   (string-match-p ": #o302#o202" str))
+   (string-match-p ": \\(#o302\\|#o202\\)" str))
 
 ;;----------------------------------------------------------------------
 (defun tmwchat--find-nick-completion ()
