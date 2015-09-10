@@ -83,6 +83,11 @@
   :group 'tmwchat
   :type 'integer)
 
+(defcustom tmwchat-equip-items-ids nil
+  "List of item IDs to periodically equip"
+  :group 'tmwchat
+  :type '(repeat integer))
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "Surprise")     (3 . "Happy")
@@ -136,6 +141,14 @@
   "Timer for downloading online.txt")
 (defvar tmwchat--ping-timer nil
   "Timer for sending PING to mapserv")
+(defvar tmwchat--random-equip-timer nil
+  "Timer for equipping random item")
+(defvar tmwchat-player-inventory nil
+  "list containing player inventory items")
+(defvar tmwchat-player-equipment nil
+  "list containing player equipment")
+(defvar tmwchat--last-item-equipped 0
+  "the ID of last random item that was equipped")
 (setq tmwchat--client-process nil)
 (setq tmwchat--late-id 0)
 (setq tmechat--late-msg "")
@@ -363,11 +376,21 @@
 	    player-chat)
     (#x0aa  5 player-equip)
     (#x0a4  ((len        u16r)
-	     (fill       (eval (- (bindat-get-field struct 'len) 4))))
+	     (items      repeat
+	       (eval (/ (- (bindat-get-field struct 'len) 4) 20))
+	       (index  u16r)
+	       (id     u16r)
+	       (fill     16)))
 	    player-equipment)
     (#x195 100 player-guild-party-info)
     (#x1ee  ((len        u16r)
-	     (fill       (eval (- (bindat-get-field struct 'len) 4))))
+	     (items      repeat
+	       (eval (/ (- (bindat-get-field struct 'len) 4) 18))
+	       (index  u16r)
+	       (id     u16r)
+	       (fill      2)
+	       (amount u16r)
+	       (fill     10)))
 	    player-inventory)
     (#x1c8 11 player-inventory-use)
     (#x1da  ((id         vec 4)
@@ -476,6 +499,7 @@
     (set-process-filter process 'tmwchat--mapserv-filter-function)
     (set-process-sentinel process 'tmwchat--mapserv-sentinel-function)
     (setq tmwchat--ping-timer (run-at-time 15 15 'tmwchat--ping))
+    (setq tmwchat--random-equip-timer (run-at-time 15 15 'tmwchat-equip-random-item))
     (setq tmwchat--fetch-online-list-timer (run-at-time 5 30 'tmwchat--online-list))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x72)
@@ -496,6 +520,8 @@
     (cancel-timer tmwchat--ping-timer))
   (when (timerp tmwchat--fetch-online-list-timer)
     (cancel-timer tmwchat--fetch-online-list-timer))
+  (when (timerp tmwchat--random-equip-timer)
+    (cancel-timer tmwchat--random-equip-timer))
   (when (processp tmwchat--client-process)
     (delete-process tmwchat--client-process))
   (clrhash tmwchat--beings)
@@ -696,6 +722,48 @@
   (let ((id (bindat-get-field info 'id))
 	(job (bindat-get-field info 'job)))
     (add-being id job)))
+
+(defun player-inventory (info)
+  (let ((items (bindat-get-field info 'items)))
+    (setq tmwchat-player-inventory items)))
+
+(defun player-equipment (info)
+  (let ((items (bindat-get-field info 'items)))
+    (setq tmwchat-player-equipment items)))
+
+(defun tmwchat-equip-item (id)
+  (interactive "nItem ID:")
+  (defun find-item-index (lst id)
+    (cond
+     ((equal lst nil) -1)
+     ((equal id (cdr (assoc 'id (car lst))))
+      (cdr (assoc 'index (car lst))))
+     (t (find-item-index (cdr lst) id))))
+  (let ((spec '((opcode    u16r)
+		(index     u16r)
+		(fill      2)))
+	(idx (find-item-index tmwchat-player-equipment id)))
+    (if (> idx -1)
+	(tmwchat-send-packet spec
+			     (list (cons 'opcode #xa9)
+				   (cons 'index  idx)))
+      (tmwchat-log "[error] Cannot find item id %d" id))))
+
+(defun tmwchat-equip-random-item (&rest items-list)
+  (setq items-list (or items-list tmwchat-equip-items-ids))
+  (let ((next-id (car items-list))
+	(len (length items-list)))
+    (cond
+     ((= len 0) nil)
+     ((= len 1)
+      (unless (= next-id tmwchat--last-item-equipped)
+	(setq tmwchat--last-item-equipped next-id)
+	(tmwchat-equip-item next-id)))
+     ((> len 1)
+      (while (= tmwchat--last-item-equipped next-id)
+	(setq next-id (nth (random len) items-list)))
+      (setq tmwchat--last-item-equipped next-id)
+      (tmwchat-equip-item next-id)))))
 
 (defun player-update-1 (info)
   (let ((id (bindat-get-field info 'id))
@@ -1068,12 +1136,8 @@
   (set (make-local-variable 'tmwchat--mapserv-host) nil)
   (set (make-local-variable 'tmwchat--mapserv-port) nil)  
   (set (make-local-variable 'tmwchat--char-id) 0)  
-  ;; (set (make-local-variable 'tmwchat--late-id) nil)
-  ;; (set (make-local-variable 'tmwchat--late-msg) "")
   (set (make-local-variable 'tmwchat-sent) nil)
-  ;; (set (make-local-variable 'tmwchat--fetch-online-list-timer) nil)
   (set (make-local-variable 'tmwchat--last-whisper-nick) nil)
-  ;; (set (make-local-variable 'tmwchat--ping-timer) nil)
   (set (make-local-variable 'tmwchat--tick) [0 0 0 1])
   (mapc (lambda (f)
 	  (make-variable-buffer-local (nth 2 f)))
@@ -1147,6 +1211,7 @@
       "/sit -- Sit down\n"
       "/stand -- Stand up\n"
       "/turn left|right|up|down -- turn in given direction\n"
+      "/equip ID -- equip item id\n"
       "/dc -- disconnect\n"
       "/debug -- toggle printing debug information\n"
       "Any other command sends a message to the public chat"
@@ -1184,6 +1249,8 @@
 	    (setq tmwchat-away-message (concat "*AFK*: " afk-msg))))
       (error nil))
     (tmwchat-log tmwchat-away-message))
+   ((string-prefix-p "/equip " tmwchat-sent)
+    (tmwchat-equip-item (string-to-int (substring tmwchat-sent 7))))
    ((string-equal "/dc" tmwchat-sent)
     (tmwchat-stop-client))   
    ((string-equal "/debug" tmwchat-sent)
