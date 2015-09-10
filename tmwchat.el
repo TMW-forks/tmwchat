@@ -93,6 +93,11 @@
   :group 'tmwchat
   :type '(repeat integer))
 
+(defcustom tmwchat-blocked-players nil
+  "Blocked players list"
+  :group 'tmwchat
+  :type '(repeat string))
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "Surprise")     (3 . "Happy")
@@ -547,19 +552,22 @@
       (if (gethash id tmwchat--beings)
 	  (let ((sender (being-name id))
 		(msg2 (tmwchat--remove-color msg)))
-	    (when (tmwchat--notify-filter msg2)
-	      (tmwchat--notify sender msg2))
-	    (tmwchat-log (format "%s: %s" sender msg2))
-	    (tmwchat-log-file "#General" (format "%s: %s" sender msg2)))
+	    (unless (member sender tmwchat-blocked-players)
+	      (when (tmwchat--notify-filter msg2)
+		(tmwchat--notify sender msg2))
+	      (tmwchat-log (format "%s: %s" sender msg2))
+	      (tmwchat-log-file "#General" (format "%s: %s" sender msg2))))
 	(progn
-	  (setq tmwchat--late-id id
-		tmwchat--late-msg msg)
+	  (unless (member sender tmwchat-blocked-players)
+	    (setq tmwchat--late-id id
+		  tmwchat--late-msg msg))
 	  (add-being id 1))))))
 
 (defun being-emotion (info)
   (let ((emote-repr (cdr (assoc (bindat-get-field info 'emote) tmwchat-emotes)))
 	(name (being-name (bindat-get-field info 'id))))
-    (when (and name emote-repr tmwchat-verbose-emotes)
+    (when (and name emote-repr tmwchat-verbose-emotes
+	       (not (member sender tmwchat-blocked-players)))
       (tmwchat-log (format "%s emotes: (%s)" name emote-repr)))))
     
 (defun being-move (info)
@@ -823,7 +831,8 @@
 (defun whisper (info)
   (let ((nick (bindat-get-field info 'nick))
 	(msg (bindat-get-field info 'msg)))
-    (unless (tmwchat--contains-302-202 msg)
+    (unless (or (tmwchat--contains-302-202 msg)
+		(member nick tmwchat-blocked-players))
       (setq msg (tmwchat--remove-color
 		 (decode-coding-string msg 'utf-8)))
       (unless (string-prefix-p "!selllist" msg)
@@ -1199,6 +1208,13 @@
       (cons (substring msg 0 m)
 	    (substring msg (+ m 1))))))
 
+(defun chomp (str)
+  "Chomp leading and tailing whitespace from STR."
+  (replace-regexp-in-string (rx (or (: bos (* (any " \t\n")))
+				    (: (* (any " \t\n")) eos)))
+			    ""
+			    str))
+
 (defun tmwchat-parse-input ()
   (cond
    ((string-equal tmwchat-sent "/help")
@@ -1220,6 +1236,7 @@
       "/stand -- Stand up\n"
       "/turn left|right|up|down -- turn in given direction\n"
       "/equip ID -- equip item id\n"
+      "/block PlayerName  -- block player\n"
       "/dc -- disconnect\n"
       "/debug -- toggle printing debug information\n"
       "Any other command sends a message to the public chat"
@@ -1259,6 +1276,15 @@
     (tmwchat-log tmwchat-away-message))
    ((string-prefix-p "/equip " tmwchat-sent)
     (tmwchat-equip-item (string-to-int (substring tmwchat-sent 7))))
+   ((string-prefix-p "/block " tmwchat-sent)
+    (let ((nick (chomp (substring tmwchat-sent 7))))
+      (when (string-prefix-p "\"" nick)
+	(setq nick (substring nick 1 (- (length nick) 1))))
+      (when (> (length nick) 0)
+	(tmwchat-log "Blocking player \"%s\"" nick)
+	(customize-set-value
+	 'tmwchat-blocked-players
+	 (add-to-list 'tmwchat-blocked-players nick)))))
    ((string-equal "/dc" tmwchat-sent)
     (tmwchat-stop-client))   
    ((string-equal "/debug" tmwchat-sent)
@@ -1273,6 +1299,8 @@
    ;;  (whisper-message
    ;;   tmwchat--last-whisper-nick
    ;;   (substring tmwchat-sent 2)))
+   ((string-prefix-p "/" tmwchat-sent)
+    (tmwchat-log "Unknown command. Type /help to get available commands"))
    (t
     (if tmwchat--whisper-target
 	(whisper-message tmwchat--whisper-target tmwchat-sent)
@@ -1287,7 +1315,6 @@
 		    tmwchat--last-whisper-nick)))
       (insert (concat "/w " nick-q " "))
       (goto-char (point-max)))))
-
 
 (defun tmwchat-log (&rest args)
   (defun log ()
