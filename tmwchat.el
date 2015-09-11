@@ -508,11 +508,11 @@
     (set-process-coding-system process 'binary 'binary)
     (set-process-filter process 'tmwchat--mapserv-filter-function)
     (set-process-sentinel process 'tmwchat--mapserv-sentinel-function)
-    (setq tmwchat--ping-timer (run-at-time
-			       tmwchat-auto-equip-interval
-			       tmwchat-auto-equip-interval
-			       'tmwchat--ping))
-    (setq tmwchat--random-equip-timer (run-at-time 15 15 'tmwchat-equip-random-item))
+    (setq tmwchat--ping-timer (run-at-time 15 15 'tmwchat--ping))
+    (setq tmwchat--random-equip-timer (run-at-time
+				       10
+				       tmwchat-auto-equip-interval
+				       'tmwchat-equip-random-item))
     (setq tmwchat--fetch-online-list-timer (run-at-time 5 30 'tmwchat--online-list))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x72)
