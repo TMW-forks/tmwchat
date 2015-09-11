@@ -61,8 +61,6 @@ chatting with your Mana-friends. There are few built-in commands
 /help --show help message
 /w NickName message
 /w "NickName with spaces" message -- send a personal message to NickName
-/ some_message -- send a whisper to the last person who you whispered to.
-               -- it doesn't work if you didn't whisper to anyone yet.
 /emote <number> -- show emote (check source code for possible emote codes)
 /emotes -- show emote codes
 /party <message> -- send message to your party
@@ -75,6 +73,8 @@ chatting with your Mana-friends. There are few built-in commands
 /sit -- sit down
 /stand -- stand up
 /turn left|right|up|down -- turn in given direction
+/block NickName -- block player (don't receive whispers, public chats, emotes)
+/equip ItemID  -- equip item ID
 /dc -- disconnect
 Any other line simply acts as a command to send a chat message in public chat.
 ```
@@ -90,7 +90,7 @@ Tab-completion for nicknames is supported.
 Joseph Botosh <rumly111@gmail.com> (TMW nickname: Travolta)
 
 ## Links ##
-* Project GitHub: https://bitbucket.org/rumly111/tmwchat
+* Project homepage: https://bitbucket.org/rumly111/tmwchat
 * The Mana World homepage: https://www.themanaworld.org
 * CrazyTree GitHub: https://github.com/pclouds/crazytree
 * Emacs homepage: https://www.gnu.org/software/emacs
