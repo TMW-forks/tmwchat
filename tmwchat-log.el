@@ -1,13 +1,13 @@
 
-(defcustom tmwchat-log-directory nil
-  "Chat logs directory. If it is set to nil, then chat 
-logs are not written to files"
+(defcustom tmwchat-log-directory ""
+  "Chat logs directory.
+If it is empty string, then chat logs are not written to files"
   :group 'tmwchat
-  :type 'directory)
+  :type 'string)
   
 (defun tmwchat-log-file (nick msg)
   "Log string <msg> to log file corresponding to <nick>"
-  (unless (eq tmwchat-log-directory nil)
+  (unless (string-equal tmwchat-log-directory "")
     (let* ((msg (if (string-suffix-p "\n" msg) msg
 		  (concat msg "\n")))
 	   (basedir (or tmwchat-log-directory
