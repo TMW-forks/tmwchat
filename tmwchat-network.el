@@ -6,6 +6,7 @@
 (defun tmwchat-send-packet (spec data &optional process)
   (let ((process (or process tmwchat--client-process))
 	(bin-data (bindat-pack spec data)))
+    (tmwchat--debug-log (format ">> %s" data))
     (process-send-string process bin-data)))
 
 ;;; unknown request skipping
@@ -60,6 +61,7 @@
 (defun tmwchat--debug-log (msg)
   (when tmwchat-debug
     (with-current-buffer (get-buffer-create "TMWChat-debug")
+      (goto-char (point-max))
       (insert msg)
       (newline))))
 

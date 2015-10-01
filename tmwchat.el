@@ -100,15 +100,15 @@
 
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
-      '((1 . "Disgust")     (2 . "Surprise")     (3 . "Happy")
-	(4 . "Sad")         (5 . "Evil")         (6 . "Wink")
-	(7 . "Angel")       (8 . "Blush")        (9 . "Tongue")
-	(10 . "Grin")       (11 . "Upset")       (12 . "Perturbed")
-	(13 . "Blah")       (101 . "Kitty")      (102 . "xD")
-	(103 . "^.^")       (104 . "Heart eye")  (105 . "Gold eye")
+      '((1 . "Disgust")     (2 . "0_o")          (3 . ":-)")
+	(4 . ":-(")         (5 . ">:-]")         (6 . ";-)")
+	(7 . "O:-)")        (8 . "Blush")        (9 . ":-P")
+	(10 . ":-D")        (11 . "Upset")       (12 . "Perturbed")
+	(13 . "Blah")       (101 . ":3")         (102 . "xD")
+	(103 . "^.^")       (104 . "Heart eye")  (105 . "$_$")
 	(106 . "Sleepy")    (107 . "u.u")        (108 . "-.-'")
-	(109 . "Surprised") (110 . "Dead")       (111 . "Look away")
-	(112 . "Sad")       (113 . "Palmhead")   (114 . "Evil")
+	(109 . "Surprised") (110 . "Dead")       (111 . ">_>")
+	(112 . "Sad")       (113 . "Facepalm")   (114 . "Evil")
 	(115 . "Angry")     (116 . "Purple Sad") (117 . "Insult Buble")
 	(118 . "Heart")     (119 . "Emote")      (120 . "Pumpkin")
 	(121 . "Evil")      (122 . "Epic")       (123 . "Bad geek")
@@ -120,7 +120,7 @@
    "*blush*" ":'-(" "*evil grin*" "*weird emote*" "*ninja*" ":-)" "*star*" "*?*" "*!*" "*idea*" "*->*"
    "*heart*" "^_^" ":-)" ";-)" ":-(" ":-O" ":-(" "*mimi*" "*epic*" "*32 teeth*" "*perturbed*"
    ":-P" "*shame*" "*sad*" "*evil*" "0_o" "*ninja*" "*bad geek*" "*star*" "*?*" "*!*" "*bubble*"
-   "*look away*" "*in love*" "*disgust*" "*devil*" "*upset*" "xD" "u.u" "x_x" "*facepalm*" "*evvil*" "*angry*"
+   ">_>" "*in love*" "*disgust*" "*devil*" "*upset*" "xD" "u.u" "x_x" "*facepalm*" "*evvil*" "*angry*"
    "*epic*" "*metal*" "*crying*" "*...*" "*@:=*" "*cat*" "*sleeping*" "-.-'" "*alien*"])
 
 (defconst tmwchat-login-error
@@ -141,15 +141,20 @@
     (11 . "Incorrect email.")
     (99 . "Username permanently erased.")))
 
-(defvar tmwchat--beings (make-hash-table :test 'equal))
-(make-variable-buffer-local 'tmwchat--beings)
-(defvar tmwchat--party-members (make-hash-table :test 'equal))
-(defvar tmwchat--players (make-hash-table :test 'equal))
+(defconst tmwchat-buffer-name "[TMWchat]"
+  "Name of main TMWChat buffer")
+
+(defvar tmwchat-player-names (make-hash-table :test 'equal)
+  "Player names' cache")
+(defvar tmwchat-nearby-player-ids nil "IDs of nearby players")
+
+;; (make-variable-buffer-local 'tmwchat-player-names)
+(defvar tmwchat-party-members (make-hash-table :test 'equal))
 (defvar tmwchat--whisper-target nil)
 (defvar tmwchat--date nil)
 (defvar tmwchat--fetch-online-list-timer nil
   "Timer for downloading online.txt")
-(defvar tmwchat--ping-timer nil
+(defvar tmwchat-ping-mapserv-timer nil
   "Timer for sending PING to mapserv")
 (defvar tmwchat--random-equip-timer nil
   "Timer for equipping random item")
@@ -159,16 +164,23 @@
   "list containing player equipment")
 (defvar tmwchat--last-item-equipped 0
   "the ID of last random item that was equipped")
+
+(defvar tmwchat-away nil "User is away if value is t")
+
 (setq tmwchat--client-process nil)
-(setq tmwchat--late-id 0)
-(setq tmechat--late-msg "")
-(setq tmwchat--away nil)
+
+(defvar tmwchat--adding-being-ids nil
+  "Set of IDs that are being requested from server")
+
 (setq tmwchat--online-list-0 nil)
 (setq tmwchat--online-list-1 nil)
 (setq tmwchat--online-list-number 0)
 
+(defvar tmwchat--map-name nil
+  "Current map name")
+
 (defun tmwchat-start-client (server port)
-  (let ((process (open-network-stream "tmwchat" "*tmwchat*" server port
+  (let ((process (open-network-stream "tmwchat" tmwchat-buffer-name server port
 				      :type 'plain)))
     (unless (processp process)
       (error "Connection attempt failed"))
@@ -301,6 +313,7 @@
 (defun char-map-info (info)
   (setq tmwchat--char-id (bindat-get-field info 'char-id)
 	tmwchat--mapserv-host tmwchat-server-host
+	tmwchat--map-name (bindat-get-field info 'map-name)
 	tmwchat--mapserv-port (bindat-get-field info 'port))
   (delete-process tmwchat--client-process))
 
@@ -311,7 +324,7 @@
 		  (session2      vec 4)
 		  (proto         u16r)
 		  (gender        u8)))
-	(process (open-network-stream "tmwchat" "*tmwchat*" server port
+	(process (open-network-stream "tmwchat" tmwchat-buffer-name server port
 				      :type 'plain)))
     (unless (processp process)
       (error "Connection attempt failed"))
@@ -429,7 +442,10 @@
 	     (job    u16r)
 	     (fill     37))
 	    player-update-2)
-    (#x091 20 player-warp)
+    (#x091 ((map strz   16)
+            (x        u16r)
+	    (y        u16r))
+	   player-warp)
     (#x020 ((id      vec 4)
 	    (addr       ip))
 	   ip-response)
@@ -484,7 +500,7 @@
 		(session1      vec 4)
 		(session2      vec 4)
 		(gender        u8)))
-	(process (open-network-stream "tmwchat" "*tmwchat*" server port
+	(process (open-network-stream "tmwchat" tmwchat-buffer-name server port
 				      :type 'plain)))
     (unless (processp process)
       (error "Connection attempt failed"))
@@ -493,7 +509,7 @@
     (set-process-coding-system process 'binary 'binary)
     (set-process-filter process 'tmwchat--mapserv-filter-function)
     (set-process-sentinel process 'tmwchat--mapserv-sentinel-function)
-    (setq tmwchat--ping-timer (run-at-time 15 15 'tmwchat--ping))
+    (setq tmwchat-ping-mapserv-timer (run-at-time 15 15 'tmwchat-ping-mapserv))
     (setq tmwchat--random-equip-timer (run-at-time
 				       10
 				       tmwchat-auto-equip-interval
@@ -514,90 +530,90 @@
   (tmwchat--cleanup))
 
 (defun tmwchat--cleanup ()
-  (when (timerp tmwchat--ping-timer)
-    (cancel-timer tmwchat--ping-timer))
+  (when (timerp tmwchat-ping-mapserv-timer)
+    (cancel-timer tmwchat-ping-mapserv-timer))
   (when (timerp tmwchat--fetch-online-list-timer)
     (cancel-timer tmwchat--fetch-online-list-timer))
   (when (timerp tmwchat--random-equip-timer)
     (cancel-timer tmwchat--random-equip-timer))
   (when (processp tmwchat--client-process)
     (delete-process tmwchat--client-process))
-  (clrhash tmwchat--beings)
-  (clrhash tmwchat--party-members))
+  (setq tmwchat-nearby-player-ids nil)
+  (clrhash tmwchat-player-names)
+  (clrhash tmwchat-party-members))
 
 (defun tmwchat--mapserv-filter-function (process packet)
   (dispatch packet tmwchat--mapserv-packets))
 
+(defun tmwchat-decode-string (s)
+  ;; (condition-case nil
+      (decode-coding-string s 'utf-8 t))
+    ;; (error "{{STRING_DECODE_ERROR}}")))
+
 ;;--------------------------------------------------------------------------------
 (defun being-chat (info)
-  (let ((id (bindat-get-field info 'id))
-	(msg (bindat-get-field info 'msg)))
-    (unless (tmwchat--contains-302-202 msg)
-      (setq msg (decode-coding-string msg 'utf-8))
-      (if (gethash id tmwchat--beings)
-	  (let ((sender (being-name id))
-		(msg2 (tmwchat--remove-color msg)))
-	    (unless (member sender tmwchat-blocked-players)
-	      (when (tmwchat--notify-filter msg2)
-		(tmwchat--notify sender msg2))
-	      (tmwchat-log (format "%s: %s" sender msg2))
-	      (tmwchat-log-file "#General" (format "%s: %s" sender msg2))))
-	(progn
-	  (unless (member sender tmwchat-blocked-players)
-	    (setq tmwchat--late-id id
-		  tmwchat--late-msg msg))
-	  (add-being id 1))))))
+  (let* ((id (bindat-get-field info 'id))
+	 (sender (tmwchat-being-name id))
+	 (msg (bindat-get-field info 'msg)))
+    (unless (or (tmwchat--contains-302-202 msg)
+		(member sender tmwchat-blocked-players))
+      (setq msg (tmwchat-decode-string msg))
+      (setq msg (tmwchat--remove-color msg))
+      (when (tmwchat--notify-filter msg)
+	(tmwchat--notify sender msg))
+      (tmwchat-log (format "%s: %s" sender msg))
+      (tmwchat-log-file "#General" (format "%s: %s" sender msg)))))
 
 (defun being-emotion (info)
   (let ((emote-repr (cdr (assoc (bindat-get-field info 'emote) tmwchat-emotes)))
-	(name (being-name (bindat-get-field info 'id))))
+	(name (tmwchat-being-name (bindat-get-field info 'id))))
     (when (and name emote-repr tmwchat-verbose-emotes
-	       (not (member sender tmwchat-blocked-players)))
-      (tmwchat-log (format "%s emotes: (%s)" name emote-repr)))))
+	       (not (member name tmwchat-blocked-players)))
+      (tmwchat-log (format "%s emotes: %s" name emote-repr)))))
     
-(defun being-move (info)
-  (let ((id (bindat-get-field info 'id))
-	(job (bindat-get-field info 'job)))
-    (add-being id job)))
+;; (defun being-move (info)
+;;   (let ((id (bindat-get-field info 'id))
+;; 	(job (bindat-get-field info 'job)))
+;;     (tmwchat-add-being id job)))
 
-(defun being-move-2 (info)
-  (let ((id (bindat-get-field info 'id))
-	(job 1))
-    (add-being id job)))
+;; (defun being-move-2 (info)
+;;   (let ((id (bindat-get-field info 'id))
+;; 	(job 1))
+;;     (tmwchat-add-being id job)))
 
 (defun being-name-response (info)
   (let ((id (bindat-get-field info 'id))
 	(name (bindat-get-field info 'name)))
-    (puthash id name tmwchat--beings)
-    (setq tmwchat--speedbar-dirty t)
-    (when (equal id tmwchat--late-id)
-      (setq tmwchat--late-id nil)
-      (let ((msg (tmwchat--remove-color tmwchat--late-msg)))
-	(when (tmwchat--notify-filter msg)
-	  (tmwchat--notify name msg))
-	(tmwchat-log (format "%s : %s" name msg))
-	(tmwchat-log-file name (format "%s : %s" name msg))
-	))))
+    (puthash id name tmwchat-player-names)
+    (setq tmwchat--adding-being-ids
+	  (delete id tmwchat--adding-being-ids))
+    (tmwchat-redisplay-player-name id name)
+    (setq tmwchat--speedbar-dirty t)))
 
 (defun being-visible (info)
   (let ((id (bindat-get-field info 'id))
 	(job (bindat-get-field info 'job)))
-    (add-being id job)))
+    (tmwchat-add-being id job)))
 
 (defun being-remove (info)
   (let ((id (bindat-get-field info 'id))
 	(dead-flag (bindat-get-field info 'dead-flag)))
     (unless (= dead-flag 1)
-      (remhash id tmwchat--beings))))
+      (setq tmwchat-nearby-player-ids
+	    (delete id tmwchat-nearby-player-ids)))))
 
-(defconst tmwchat--being-name-request-spec
-  '((opcode      u16r)  ;; #x94
-    (id          vec 4)))
-
-(defun being-name (id)
+;; TODO: should also update being cache if name not on online list
+;; but now online list is buggy, so we skip it
+(defun tmwchat-being-name (id)
   "return being name by ID"
-  (gethash id tmwchat--beings))
-(make-variable-buffer-local 'being-name)
+  (let ((name (gethash id tmwchat-player-names)))
+    (if name
+	name
+      (let ((name-m (format "{{ID:%s}}" id)))
+	(tmwchat-add-being id 1)
+	name-m))))
+
+(make-variable-buffer-local 'tmwchat-being-name)
 
 (defun vec-less (v1 v2)
   (or (< (elt v1 3) (elt v2 3))
@@ -607,24 +623,27 @@
 		    (or (< (elt v1 1) (elt v2 1))
 			(and (= (elt v1 1) (elt v2 1))
 			     (< (elt v1 0) (elt v2 0)))))))))
+
 (make-variable-buffer-local 'vec-less)
 
-(defun add-being (id job)
-  (let ((spec '((opcode    u16r)
-		(id    vec 4))))
-    (when (and (vec-less id [128 119 142 6])  ;; 110'000'000
-	       (or (<= job 25)
-		   (and (>= job 4001)
-			(<= job 4049))))
-      (unless (gethash id tmwchat--beings)
-        ;; (tmwchat-log (format "adding being %s job %s" id job))
-	;;; actual hash table update is done when we get being-name-response
+(defun tmwchat-add-being (id job)
+  (when (and (vec-less id [128 119 142 6])  ;; 110'000'000
+	     (or (<= job 25)
+		 (and (>= job 4001)
+		      (<= job 4049))))
+    (add-to-list 'tmwchat-nearby-player-ids id)
+    (unless (or (gethash id tmwchat-player-names)
+		(member id tmwchat--adding-being-ids))
+      (let ((spec '((opcode    u16r)
+		    (id    vec 4))))
+	(push id tmwchat--adding-being-ids)
 	(tmwchat-send-packet spec
 			     (list (cons 'opcode #x94)
 				   (cons 'id id)))))))
-(make-variable-buffer-local 'add-being)
 
-(defun tmwchat--ping ()
+(make-variable-buffer-local 'tmwchat-add-being)
+
+(defun tmwchat-ping-mapserv ()
   (let ((spec '((opcode    u16r)
 		(tick  vec 4)))
 	(process (get-process "tmwchat")))
@@ -635,51 +654,10 @@
 				   (cons 'tick   tmwchat--tick)))))))
 
 
-(defun tmwchat-set-online-users (users-list)
-  (cond
-   ((= tmwchat--online-list-number 0)
-    (setq tmwchat--online-list-number 1
-	  tmwchat--online-list-0 users-list))
-   ((= tmwchat--online-list-number 1)
-    (setq tmwchat--online-list-number 0
-	  tmwchat--online-list-1 users-list))))
-
-(defun tmwchat-get-online-users ()
-  (cond
-   ((= tmwchat--online-list-number 0)
-    tmwchat--online-list-1)
-   ((= tmwchat--online-list-number 1)
-    tmwchat--online-list-0)))
-
-(defun tmwchat--online-list ()
-  (defun chomp-end (str)
-    (when (string-suffix-p "(GM) " str)
-      (setq str (substring str 0 -5)))
-    (replace-regexp-in-string (rx (* (any " \t\n")) eos)
-			      ""
-			      str))
-  (defun gen-list (str)
-    (let* ((m (string-match "------------------------------" str))
-	   (end (+ (match-end 0) 1))
-	   (strm (substring str end))
-	   (m2 (string-match "\n\n" strm))
-	   (start (match-beginning 0))
-	   (strmm (substring strm 0 start)))
-      (mapcar 'chomp-end (split-string strmm "\n"))))
-  (defun callback (status)
-    (let ((onl)
-	  (data (buffer-string)))
-      (setq onl (gen-list data))
-      (tmwchat-set-online-users onl)
-      (setq tmwchat--speedbar-dirty t)
-      (kill-buffer (current-buffer))))
-  (let ((url "http://server.themanaworld.org/online.txt"))
-    (url-retrieve url 'callback nil t t)))
-
 (defun show-emote (id)
   (let ((spec '((opcode    u16r)
 		(id        u8))))
-    (tmwchat-log "You emote: (%s)" (cdr (assoc id tmwchat-emotes)))
+    ;; (tmwchat-log "You emote: (%s)" (cdr (assoc id tmwchat-emotes)))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #xbf)
 			       (cons 'id id)))))
@@ -722,7 +700,7 @@
 (defun player-move (info)
   (let ((id (bindat-get-field info 'id))
 	(job (bindat-get-field info 'job)))
-    (add-being id job)))
+    (tmwchat-add-being id job)))
 
 (defun player-inventory (info)
   (let ((items (bindat-get-field info 'items)))
@@ -769,25 +747,26 @@
 (defun player-update-1 (info)
   (let ((id (bindat-get-field info 'id))
 	(job (bindat-get-field info 'job)))
-    (add-being id job)))
+    (tmwchat-add-being id job)))
 
 (defun player-update-2 (info)
   (let ((id (bindat-get-field info 'id))
 	(job (bindat-get-field info 'job)))
-    (add-being id job)))
+    (tmwchat-add-being id job)))
 
 (defun connection-problem (info)
   (let* ((code (bindat-get-field info 'code))
 	 (err (if (eq code 2)
 		  "Account already in use"
 		(format "%s" code))))
-    (tmwchat-log "Connection problem: %s" err)))
+    (tmwchat-log "Connection problem: %s" err)
+    (tmwchat-stop-client)))
 
 (defun player-chat (info)
   (let ((msg (bindat-get-field info 'msg)))
     (unless (tmwchat--contains-302-202 msg)
       (setq msg (tmwchat--remove-color
-		 (decode-coding-string msg 'utf-8)))
+		 (tmwchat-decode-string msg)))
       (if (string-prefix-p tmwchat-charname msg)
 	  (progn
 	    (tmwchat-log "%s" msg)
@@ -801,7 +780,7 @@
   (let ((msg (bindat-get-field info 'msg)))
     (unless (tmwchat--contains-302-202 msg)
       (setq msg (tmwchat--remove-color
-		 (decode-coding-string msg 'utf-8)))
+		 (tmwchat-decode-string msg)))
       (tmwchat--notify "GM" msg)
       (tmwchat-log "GM: %s" msg)
       (tmwchat-log-file "#General" (format "GM: %s" msg)))))
@@ -819,14 +798,14 @@
     (unless (or (tmwchat--contains-302-202 msg)
 		(member nick tmwchat-blocked-players))
       (setq msg (tmwchat--remove-color
-		 (decode-coding-string msg 'utf-8)))
+		 (tmwchat-decode-string msg)))
       (unless (string-prefix-p "!selllist" msg)
 	(tmwchat--update-recent-users nick)
 	(unless (string-equal nick "guild")
 	  (tmwchat--notify nick msg))
 	(tmwchat-log (format "[%s ->] %s" nick msg))
 	(tmwchat-log-file nick (format "[%s ->] %s" nick msg))
-	(when (and tmwchat--away
+	(when (and tmwchat-away
 		   (not (string-equal nick "guild")))
 	  (whisper-message nick tmwchat-away-message))
 	(when tmwchat-whispers-to-buffers
@@ -850,7 +829,7 @@
 	    (leader (bindat-get-field info 'members curr 'leader))
 	    (online (bindat-get-field info 'members curr 'online)))
 	(setq member-info (list nick map leader online))
-	(puthash id member-info tmwchat--party-members)
+	(puthash id member-info tmwchat-party-members)
 	;; (message "%s (%s/%s): %s" name curr count member-info) 
 	(setq curr (1+ curr))))))
 
@@ -859,29 +838,55 @@
 	(msg    (bindat-get-field info 'msg))
 	(nick))
     (setq nick (or (ignore-errors
-		     (car (gethash id tmwchat--party-members)))
-		   (format "%s" id)))
+		     (car (gethash id tmwchat-party-members)))
+		   (format "{{ID:%s}}" id)))
     (setq msg (tmwchat--remove-color msg))
     (tmwchat-log "[Party] %s : %s" nick msg)
-    (tmwchat-log-file "#Party" (format "%s : %s" nick msg))
-    ))
+    (tmwchat-log-file "#Party" (format "%s : %s" nick msg))))
+
+(defconst tmwchat--party-message-spec
+  '((opcode      u16r)  ; #x0108
+    (len         u16r)
+    (msg    str  (eval (- (bindat-get-field struct 'len) 4)))))
+
+(defun tmwchat-send-party-message (msg)
+  (let* ((nmsg (encode-coding-string msg 'utf-8))
+	 (nlen (length nmsg)))
+    (tmwchat-send-packet tmwchat--party-message-spec
+			 (list (cons 'opcode #x0108)
+			       (cons 'len (+ nlen 4))
+			       (cons 'msg nmsg)))))
+
+;;-------------------------------------------------------------------
+(defun player-warp (info)
+  (let ((map    (bindat-get-field info 'map))
+	(x      (bindat-get-field info 'x))
+	(y      (bindat-get-field info 'y)))
+    (tmwchat-log "Warped to %s %d,%d" map x y)
+    (write-u16 #x7d)))
+
+(defun tmwchat-read-coordinates (v)
+  (let ((x) (y))
+    (setq x (lsh (logior (lsh (logand (elt v 1) #xc0)
+			      8)
+			 (elt v 0))
+		 -6))
+    (setq y (lsh (logior (lsh (logand (elt v 2) #xf0)
+			      8)
+			 (logand (elt v 1) #x3f))
+		 -4))
+    (cons x y)))
 
 (defun mapserv-connected (info)
   (let ((tick (bindat-get-field info 'tick))
-	(coor (bindat-get-field info 'coor)))
+	(coor (bindat-get-field info 'coor))
+	(x) (y))
+    (setq coor (tmwchat-read-coordinates coor))
     (when tmwchat-debug
-      (tmwchat-log "mapserv-connected  tick=%s coor=%s"
-		   tick coor))
+      (tmwchat-log "mapserv-connected  tick=%s map=%s coor=%s"
+		   tick tmwchat--map-name coor))
     (tmwchat-log "Type /help <enter> to get infomation about available commands")
     (write-u16 #x7d)))  ;; map-loaded
-
-(defun tmwchat-time ()
-  (let ((date (format-time-string "%D")))
-    (if (string-equal date tmwchat--date)
-	(format-time-string "%R")
-      (progn
-	(setq tmwchat--date date)
-	(format-time-string "%D %R")))))
 
 ;;-------------------------------------------------------------------
 (defconst tmwchat--change-act-spec
@@ -889,12 +894,14 @@
     (fill      4)
     (action    u8)))
 
-(defun tmwchat--sit ()
+(defun tmwchat-sit ()
+  (tmwchat-log "You sit down")
   (tmwchat-send-packet tmwchat--change-act-spec
 		       '((opcode . #x89)
 			 (action . 2))))
 
-(defun tmwchat--stand ()
+(defun tmwchat-stand ()
+  (tmwchat-log "You stand up")
   (tmwchat-send-packet tmwchat--change-act-spec
 		       '((opcode . #x89)
 			 (action . 3))))
@@ -914,30 +921,18 @@
 (defun tmwchat-turn (direction)
   (let ((dir (cdr (assoc direction tmwchat--directions))))
     (if dir
+	(tmwchat-log "You turn to %s" dir)
 	(tmwchat-send-packet
 	 tmwchat--being-change-dir-spec
 	 (list (cons 'opcode #x9b)
 	       (cons 'dir dir)))
       (message "Wrong direction: %s" direction))))
 
-(defconst tmwchat--party-message-spec
-  '((opcode      u16r)  ; #x0108
-    (len         u16r)
-    (msg    str  (eval (- (bindat-get-field struct 'len) 4)))))
-
-(defun tmwchat-send-party-message (msg)
-  (let* ((nmsg (encode-coding-string msg 'utf-8))
-	 (nlen (length nmsg)))
-    (tmwchat-send-packet tmwchat--party-message-spec
-			 (list (cons 'opcode #x0108)
-			       (cons 'len (+ nlen 4))
-			       (cons 'msg nmsg)))))
-
 ;;====================================================================
 (defun tmwchat-show-beings ()
-  (maphash (lambda (key value)
-	     (tmwchat-log (format "%s (id:%s)" value key)))
-	   tmwchat--beings))
+  (dolist (id tmwchat-nearby-player-ids)
+    (let ((name (tmwchat-being-name id)))
+      (tmwchat-log (format "%s (id:%s)" name id)))))
 
 (defun tmwchat--notify-filter (msg)
   (let ((regex (mapconcat
@@ -979,11 +974,11 @@
 (defun tmwchat--replace-whisper-cmd (nick)
   (interactive "sNick:")
   (defun insert-formatted (nick-q msg)
-    (with-current-buffer "*tmwchat*"
+    (with-current-buffer tmwchat-buffer-name
       (delete-region tmwchat--start-point (point-max))
       (insert (concat "/w " nick-q " " msg))
       (goto-char (point-max))))
-  (with-current-buffer "*tmwchat*"
+  (with-current-buffer tmwchat-buffer-name
     (let ((line (buffer-substring tmwchat--start-point (point-max)))
 	  (nick-q (if (string-match-p " " nick)
 		      (concat "\"" nick "\"")
@@ -1055,7 +1050,7 @@
 (defun tmwchat--contains-302-202 (str)
   "Check if string contains ManaPlus-specific messages with \302\202
    that breaks utf8 decoding"
-   (string-match-p ": \\(#o302\\|#o202\\)" str))
+  (string-match-p "^#o302|#o202" str))
 
 ;;----------------------------------------------------------------------
 (defun tmwchat--find-nick-completion ()
@@ -1156,7 +1151,7 @@
 (defun tmwchat ()
   "Switch to tmwchat buffer or make new"
   (interactive)
-  (switch-to-buffer "*tmwchat*")
+  (switch-to-buffer tmwchat-buffer-name)
   (tmwchat-mode)
   (setq debug-on-error t)
   (setq max-lisp-eval-depth 4096)
@@ -1231,9 +1226,9 @@
    ((string-equal tmwchat-sent "/room")
     (tmwchat-show-beings))
    ((string-equal tmwchat-sent "/sit")
-    (tmwchat--sit))
+    (tmwchat-sit))
    ((string-equal tmwchat-sent "/stand")
-    (tmwchat--stand))
+    (tmwchat-stand))
    ((string-prefix-p "/turn " tmwchat-sent)
     (tmwchat-turn (substring tmwchat-sent 6)))
    ((string-prefix-p "/emote " tmwchat-sent)
@@ -1250,9 +1245,9 @@
     (tmwchat-send-party-message
      (tmwchat--make-urls (substring tmwchat-sent 7))))
    ((string-equal "/back" tmwchat-sent)
-    (setq tmwchat--away nil))
+    (setq tmwchat-away nil))
    ((string-prefix-p "/away" tmwchat-sent)
-    (setq tmwchat--away t)
+    (setq tmwchat-away t)
     (condition-case nil
 	(let ((afk-msg (substring tmwchat-sent 6)))
 	  (unless (= (length afk-msg) 0)
@@ -1327,5 +1322,61 @@
 	  (log)
 	(save-excursion
 	  (log))))))
+
+(defun tmwchat-set-online-users (users-list)
+  (cond
+   ((= tmwchat--online-list-number 0)
+    (setq tmwchat--online-list-number 1
+	  tmwchat--online-list-0 users-list))
+   ((= tmwchat--online-list-number 1)
+    (setq tmwchat--online-list-number 0
+	  tmwchat--online-list-1 users-list))))
+
+(defun tmwchat-get-online-users ()
+  (cond
+   ((= tmwchat--online-list-number 0)
+    tmwchat--online-list-1)
+   ((= tmwchat--online-list-number 1)
+    tmwchat--online-list-0)))
+
+(defun tmwchat--online-list ()
+  (defun chomp-end (str)
+    (when (string-suffix-p "(GM) " str)
+      (setq str (substring str 0 -5)))
+    (replace-regexp-in-string (rx (* (any " \t\n")) eos)
+			      ""
+			      str))
+  (defun gen-list (str)
+    (let* ((m (string-match "------------------------------" str))
+	   (end (+ (match-end 0) 1))
+	   (strm (substring str end))
+	   (m2 (string-match "\n\n" strm))
+	   (start (match-beginning 0))
+	   (strmm (substring strm 0 start)))
+      (mapcar 'chomp-end (split-string strmm "\n"))))
+  (defun callback (status)
+    (let ((onl)
+	  (data (buffer-string)))
+      (setq onl (gen-list data))
+      (tmwchat-set-online-users onl)
+      (setq tmwchat--speedbar-dirty t)
+      (kill-buffer (current-buffer))))
+  (let ((url "http://server.themanaworld.org/online.txt"))
+    (url-retrieve url 'callback nil t t)))
+
+(defun tmwchat-time ()
+  (let ((date (format-time-string "%D")))
+    (if (string-equal date tmwchat--date)
+	(format-time-string "%R")
+      (progn
+	(setq tmwchat--date date)
+	(format-time-string "%D %R")))))
+
+(defun tmwchat-redisplay-player-name (id name)
+  (with-current-buffer tmwchat-buffer-name
+    (save-excursion
+      (let ((inhibit-read-only t)
+	    (old-name (format "{{ID:%s}}" id)))
+	(replace-string old-name name nil (point-min) (point-max))))))
 
 (provide 'tmwchat)
