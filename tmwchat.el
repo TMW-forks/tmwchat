@@ -297,17 +297,26 @@
 	   (m2 (string-match "\n\n" strm))
 	   (start (match-beginning 0))
 	   (strmm (substring strm 0 start)))
+      (message "ONLINE: %s" (read (substring strm (+ start 2))))
       (mapcar 'chomp-end (split-string strmm "\n"))))
   (defun callback (status)
     (let ((onl)
 	  (data (buffer-string)))
       (setq onl (gen-list data))
       (tmwchat-set-online-users onl)
+      (tmwchat-update-nearby-player-names onl)
       (setq tmwchat--speedbar-dirty t)
       (kill-buffer (current-buffer))))
   (let ((url "http://server.themanaworld.org/online.txt"))
     (url-retrieve url 'callback nil t t)))
 
+(defun tmwchat-update-nearby-player-names (online-list)
+  (dolist (id tmwchat-nearby-player-ids)
+    (let ((name (gethash id tmwchat-player-names)))
+      (when name
+	(unless (member name online-list)
+	  (remhash id tmwchat-player-names)
+	  (tmwchat-add-being id 1))))))
 
 ;;====================================================================
 (defun tmwchat-time ()
