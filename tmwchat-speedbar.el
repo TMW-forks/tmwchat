@@ -34,20 +34,20 @@
 
 (defun tmwchat-speedbar-buttons (directory &optional depth)
   (when tmwchat--speedbar-dirty
-    (let ((nearby tmwchat--beings)
+    (let ((nearby)
 	  (online (tmwchat-get-online-users))
 	  (recent (ring-elements tmwchat-recent-users)))
       (erase-buffer)
       (speedbar-insert-separator "Nearby")
-      (maphash (lambda (id nick)
-		 (push nick nearby)
-		 (speedbar-insert-button
-		  nick
-		  'speedbar-button-face
-		  'speedbar-highlight-face
-		  'tmwchat--speedbar-item-clicked
-		  id))
-	       nearby)
+      (mapc (lambda (id)
+	      ;; (push nick nearby)
+	      (speedbar-insert-button
+	       (gethash id tmwchat-player-names)
+	       'speedbar-button-face
+	       'speedbar-highlight-face
+	       'tmwchat--speedbar-item-clicked
+	       id))
+	    tmwchat-nearby-player-ids)
       (speedbar-insert-separator "Recent")
       (mapc (lambda (nick)
 		 (speedbar-insert-button
