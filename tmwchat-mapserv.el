@@ -464,11 +464,12 @@
 (defun tmwchat-turn (direction)
   (let ((dir (cdr (assoc direction tmwchat--directions))))
     (if dir
-	(tmwchat-log "You turn to %s" dir)
-	(tmwchat-send-packet
-	 tmwchat--being-change-dir-spec
-	 (list (cons 'opcode #x9b)
-	       (cons 'dir dir)))
+	(progn
+	  (tmwchat-log "You turn to %s" direction)
+	  (tmwchat-send-packet
+	   tmwchat--being-change-dir-spec
+	   (list (cons 'opcode #x9b)
+		 (cons 'dir dir))))
       (message "Wrong direction: %s" direction))))
 
 ;;=====================================================================

@@ -625,6 +625,9 @@
     (save-excursion
       (let ((inhibit-read-only t)
 	    (old-name (format "{{ID:%s}}" id)))
-	(replace-string old-name name nil (point-min) (point-max))))))
+	(replace-string old-name name nil (point-min) (point-max))
+	(goto-char (point-max))
+	(beginning-of-line)
+	(setq tmwchat--start-point (point))))))
 
 (provide 'tmwchat)
