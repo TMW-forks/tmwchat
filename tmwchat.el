@@ -284,21 +284,29 @@
     tmwchat--online-list-0)))
 
 (defun tmwchat--online-list ()
+
   (defun chomp-end (str)
     (when (string-suffix-p "(GM) " str)
       (setq str (substring str 0 -5)))
     (replace-regexp-in-string (rx (* (any " \t\n")) eos)
 			      ""
 			      str))
+
   (defun gen-list (str)
-    (let* ((m (string-match "------------------------------" str))
-	   (end (+ (match-end 0) 1))
-	   (strm (substring str end))
-	   (m2 (string-match "\n\n" strm))
-	   (start (match-beginning 0))
-	   (strmm (substring strm 0 start)))
-      (message "ONLINE: %s" (read (substring strm (+ start 2))))
-      (mapcar 'chomp-end (split-string strmm "\n"))))
+    (save-match-data
+      (let ((pos) (n) (lst))
+	(string-match "------------------------------" str)
+	(setq pos (+ (match-end 0) 1)
+	      str (substring str pos))
+	(string-match "\n\n" str)
+	(setq pos (match-beginning 0)
+	      n   (read (substring str (+ pos 2)))
+	      str (substring str 0 pos)
+	      lst (mapcar 'chomp-end (split-string str "\n")))
+	(unless (eq n (length lst))
+	  (error "Length of online list should be %d" n))
+	lst)))
+
   (defun callback (status)
     (let ((onl)
 	  (data (buffer-string)))
@@ -307,6 +315,7 @@
       (tmwchat-update-nearby-player-names onl)
       (setq tmwchat--speedbar-dirty t)
       (kill-buffer (current-buffer))))
+
   (let ((url "http://server.themanaworld.org/online.txt"))
     (url-retrieve url 'callback nil t t)))
 
