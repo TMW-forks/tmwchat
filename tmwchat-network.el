@@ -1,5 +1,6 @@
 (require 'cl)
 (require 'bindat)
+(require 'tmwchat-log)
 
 (setq tmwchat--partial-packet nil)
 
@@ -57,13 +58,6 @@
   (tmwchat-send-packet tmwchat--u16-spec
 		       (list (cons 'opcode arg))))
 (make-variable-buffer-local 'write-u16)
-
-(defun tmwchat--debug-log (msg)
-  (when tmwchat-debug
-    (with-current-buffer (get-buffer-create "TMWChat-debug")
-      (goto-char (point-max))
-      (insert msg)
-      (newline))))
 
 (defun dispatch (packet packet-specs)
   
