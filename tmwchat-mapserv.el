@@ -1,6 +1,7 @@
 (require 'tmwchat-log)
 (require 'tmwchat-network)
 (require 'tmwchat-util)
+(require 'tmwchat-trade)
 
 (defconst tmwchat--mapserv-packets
   '((#x08a  27 being-action)
@@ -273,7 +274,15 @@
 		(member nick tmwchat-blocked-players))
       (setq msg (tmwchat--remove-color
 		 (tmwchat-decode-string msg)))
-      (unless (string-prefix-p "!selllist" msg)
+      (cond
+       ((string-prefix-p "!selllist" msg)
+	(let ((answer (tmwchat-selllist)))
+	  (whisper-message nick answer t)))
+       ((string-prefix-p "!buylist" msg) nil)
+       ((string-prefix-p "!buyitem" msg)
+	(whisper-message nick "cmd !buyitem not implemented"))
+       ((string-prefix-p "!sellitem" msg) nil)
+       (t
 	(tmwchat--update-recent-users nick)
 	(unless (string-equal nick "guild")
 	  (tmwchat--notify nick msg))
@@ -283,7 +292,7 @@
 		   (not (string-equal nick "guild")))
 	  (whisper-message nick tmwchat-away-message))
 	(when tmwchat-whispers-to-buffers
-	  (tmwchat--whisper-to-buffer nick (format "[%s ->] %s" nick msg)))))))
+	  (tmwchat--whisper-to-buffer nick (format "[%s ->] %s" nick msg))))))))
 
 (defun whisper-response (info)
   (let ((code (bindat-get-field info 'code)))
@@ -386,7 +395,7 @@
 			       (cons 'msg nmsg)))))
 (make-variable-buffer-local 'chat-message)
 
-(defun whisper-message (nick msg)
+(defun whisper-message (nick msg &optional nolog)
   (let* ((spec  '((opcode       u16r)
 		  (len          u16r)
 		  (nick   strz  24)
@@ -395,12 +404,13 @@
 	 (nlen (length nmsg)))
     (tmwchat--update-recent-users nick)
     (setq msg (tmwchat-escape-percent msg))
-    (tmwchat-log "[-> %s] %s" nick msg)
-    (tmwchat-log-file nick (format "[-> %s] %s" nick msg))
-    (when tmwchat-whispers-to-buffers
-      (tmwchat--whisper-to-buffer
-       nick
-       (format "[-> %s] %s" nick msg)))
+    (unless nolog
+      (tmwchat-log "[-> %s] %s" nick msg)
+      (tmwchat-log-file nick (format "[-> %s] %s" nick msg)))
+    ;; (when tmwchat-whispers-to-buffers
+    ;;   (tmwchat--whisper-to-buffer
+    ;;    nick
+    ;;    (format "[-> %s] %s" nick msg)))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x096)
 			       (cons 'len (+ nlen 29))
