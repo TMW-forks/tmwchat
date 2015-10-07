@@ -15,6 +15,8 @@
 (defvar tmwchat--trade-player-offer 0)
 (defvar tmwchat--trade-player-should-pay 0)
 (defvar tmwchat--trade-item-index -10)
+(defvar tmwchat--trade-cancel-timer nil
+  "Timer to cancel trade if player hesitates too long")
 
 (defun tmwchat-encode-base94 (value size)
   (let ((output "")
@@ -99,12 +101,14 @@
   (let ((code (bindat-get-field info 'code)))
     (cond
      ((= code 0)
-      (tmwchat-log "Trade response: too far away")
+      (tmwchat-trade-log "Trade response: too far away")
       (whisper-message tmwchat--trade-player "You are too far away")
       (tmwchat--trade-reset-state)
       )
      ((= code 3)
-      (tmwchat-log "Trade accepted")
+      (tmwchat-trade-log "Trade accepted")
+      (setq tmwchat--trade-cancel-timer
+	    (run-at-time 120 nil 'tmwchat-trade-cancel-request))
       (let ((index (tmwchat-inventory-item-index tmwchat--trade-item-id)))
 	(setq tmwchat--trade-item-index index)
 	(if (> index -10)
@@ -114,24 +118,23 @@
 	  (progn
 	    (tmwchat-trade-cancel-request)
 	    (tmwchat--trade-reset-state)
-	    (tmwchat-log "I cancel trade")))))
+	    (tmwchat-trade-log "I cancel trade")))))
      ((= code 4)
-      (tmwchat-log "Trade canceled")
+      (tmwchat-trade-log "Trade canceled")
       (tmwchat--trade-reset-state)))))
 
 (defun trade-item-add (info)
   (let ((amount (bindat-get-field info 'amount))
 	(id (bindat-get-field info 'id)))
-    (tmwchat-log "SMSG_TRADE_ITEM_ADD id=%d amount=%d" id amount)
+    (tmwchat-trade-log "SMSG_TRADE_ITEM_ADD id=%d amount=%d" id amount)
     (cond
      ((= id 0)
       (setq tmwchat--trade-player-offer amount))
      ((> id 0)
       (whisper-message tmwchat--trade-player "Currently I accept only GP")
-      (tmwchat-trade-cancel-request)
-      (tmwchat--trade-reset-state))
+      (tmwchat-trade-cancel-request))
      (t
-      (tmwchat-log "trade error")
+      (tmwchat-trade-log "trade error")
       (whisper-message tmwchat--trade-player "Trade error")
       (tmwchat-trade-cancel-request)))))
 
@@ -143,44 +146,44 @@
      ((= code 0)
       (player-inventory-remove (list (cons 'index index)
 				     (cons 'amount amount)))
-      (tmwchat-log "trade-item-add-response index=%d amount=%d" index amount))
+      (tmwchat-trade-log "SMSG_TRADE_ITEM_ADD_RESPONSE index=%d amount=%d" index amount))
      ((= code 1)
-      (tmwchat-log "%s is overweight" tmwchat--trade-player)
-      (whisper-message tmwchat--trade-player "You seem to be overweight")
-      (tmwchat-trade-cancel-request)
-      (tmwchat--trade-reset-state))
+      (tmwchat-trade-log "%s is overweight" tmwchat--trade-player)
+      (whisper-message tmwchat--trade-player "You seem to be overweight.")
+      (tmwchat-trade-cancel-request))
      ((= code 2)
-      (tmwchat-log "%s has no free slots" tmwchat--trade-player)
-      (whisper-message tmwchat--trade-player "You don't have free slots")
-      (tmwchat-trade-cancel-request)
-      (tmwchat--trade-reset-state))
+      (tmwchat-trade-log "%s has no free slots" tmwchat--trade-player)
+      (whisper-message tmwchat--trade-player "You don't have free slots.")
+      (tmwchat-trade-cancel-request))
      (t
-      (tmwchat-log "Unknown trade error")
-      (whisper-message tmwchat--trade-player "Unknown trade error")
-      (tmwchat-trade-cancel-request)
-      (tmwchat--trade-reset-state)))))
+      (tmwchat-trade-log "Unknown trade error.")
+      (whisper-message tmwchat--trade-player "Unknown trade error.")
+      (tmwchat-trade-cancel-request)))))
 
 (defun trade-cancel (info)
-  (tmwchat-log "Trade canceled.")
+  (tmwchat-trade-log "Trade canceled.")
+  (when (timerp tmwchat--trade-cancel-timer)
+    (cancel-timer tmwchat--trade-cancel-timer))
   (tmwchat--trade-reset-state))
 
 (defun trade-ok (info)
   (let ((who (bindat-get-field info 'who)))
     (cond
      ((= who 0)
-      (tmwchat-log "Trade OK: self"))
+      (tmwchat-trade-log "Trade OK: self"))
      (t
-      (tmwchat-log "Trade OK: %s" tmwchat--trade-player)
+      (tmwchat-trade-log "Trade OK: %s" tmwchat--trade-player)
       (cond
        ((>= tmwchat--trade-player-offer tmwchat--trade-player-should-pay)
 	(tmwchat-trade-ok))
        ((< tmwchat--trade-player-offer tmwchat--trade-player-should-pay)
-	(whisper-message tmwchat--trade-player "Your offer makes me sad")
-	(tmwchat-trade-cancel-request)
-	(tmwchat--trade-reset-state)))))))
+	(whisper-message tmwchat--trade-player "Your offer makes me sad.")
+	(tmwchat-trade-cancel-request)))))))
 
 (defun trade-complete (info)
-  (tmwchat-log "Trade with %s complete" tmwchat--trade-player)
+  (tmwchat-trade-log "Trade with %s complete" tmwchat--trade-player)
+  (when (timerp tmwchat--trade-cancel-timer)
+    (cancel-timer tmwchat--trade-cancel-timer))
   (tmwchat--trade-reset-state))
 
 (defun tmwchat-trade-add-item (index amount)
@@ -210,7 +213,6 @@
 (make-variable-buffer-local 'tmwchat-trade-request)
 
 (defun tmwchat-trade-cancel-request ()
-  (tmwchat-log "Trade canceled.")
   (write-u16 #x0ed))
 (make-variable-buffer-local 'tmwchat-trade-cancel-request)
 
@@ -222,5 +224,12 @@
 	tmwchat--trade-item-amount 0
 	tmwchat--trade-item-price 0
 	tmwchat--trade-item-index -10))
+
+(defun tmwchat-trade-log (&rest args)
+  (with-current-buffer (get-buffer-create "TMWChat-trade")
+    (let ((msg (apply 'format args)))
+      (goto-char (point-max))
+      (insert msg)
+      (newline))))
 
 (provide 'tmwchat-trade)
