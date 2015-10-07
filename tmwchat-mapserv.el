@@ -71,7 +71,7 @@
 	    player-inventory-add)
     (#xaf   ((index   u16r)
 	     (amount  u16r))
-	    player-inventory-add)
+	    player-inventory-remove)
     (#x1c8 11 player-inventory-use)
     (#x1da  ((id      vec 4)
 	     (fill        8)
@@ -142,6 +142,19 @@
     (#x1de 31 skill-damage)
     (#x11a 13 skill-no-damage)
     (#x0e5 24 trade-request)
+    (#x0e7 ((code           u8))
+	   trade-response)
+    (#x0e9 ((amount       u32r)
+	    (id           u16r))
+	   trade-item-add)
+    (#x1b1 ((index        u16r)
+	    (amount       u16r)
+	    (code           u8))
+	   trade-item-add-response)
+    (#x0ee 0   trade-cancel)
+    (#x0f0 2   trade-complete)
+    (#x0ec ((who            u8))
+	   trade-ok)
     (#x097 ((len          u16r)
 	    (nick  strz   24)
 	    (msg   strz (eval (- (bindat-get-field struct 'len) 28))))
@@ -229,6 +242,62 @@
 	(job (bindat-get-field info 'job)))
     (tmwchat-add-being id job)))
 
+(defun player-inventory-add (info)
+
+  (defun add-or-update (lst id amount index)
+    (if (equal lst nil)
+	(list (list (cons 'amount amount)
+		    (cons 'id id)
+		    (cons 'index index)))
+      (let* ((head (car lst))
+	     (tail (cdr lst))
+	     (c-id (cdr (assoc 'id head)))
+	     (c-amount (cdr (assoc 'amount head)))
+	     (c-index (cdr (assoc 'index head))))
+	(if (and (= c-id id) (= c-index index))
+	;; (if (= c-index index)
+	    (let ((new-head (list (cons 'id id)
+				  (cons 'index index)
+				  (cons 'amount (+ c-amount amount)))))
+	      (cons new-head tail))
+	  (cons head (add-or-update tail id amount index))))))
+
+  (let ((id (bindat-get-field info 'id))
+	(amount (bindat-get-field info 'amount))
+	(index (bindat-get-field info 'index)))
+    (setq tmwchat-player-inventory
+	  (add-or-update tmwchat-player-inventory
+			 id
+			 amount
+			 index))))
+
+
+(defun player-inventory-remove (info)
+
+  (defun remove-or-update (lst amount index)
+    (if (equal lst nil)
+	nil
+      (let* ((head (car lst))
+	     (tail (cdr lst))
+	     (c-id (cdr (assoc 'id head)))
+	     (c-amount (cdr (assoc 'amount head)))
+	     (c-index (cdr (assoc 'index head))))
+	(if (= c-index index)
+	    (if (> c-amount amount)
+		(let ((new-head (list (cons 'id c-id)
+				      (cons 'index index)
+				      (cons 'amount (- c-amount amount)))))
+		  (cons new-head tail))
+	      tail)
+	  (cons head (remove-or-update tail amount index))))))
+
+  (let ((amount (bindat-get-field info 'amount))
+	(index (bindat-get-field info 'index)))
+    (setq tmwchat-player-inventory
+	  (remove-or-update tmwchat-player-inventory
+			    amount
+			    index))))
+
 (defun connection-problem (info)
   (let* ((code (bindat-get-field info 'code))
 	 (err (if (eq code 2)
@@ -260,13 +329,6 @@
       (tmwchat-log "GM: %s" msg)
       (tmwchat-log-file "#General" (format "GM: %s" msg)))))
 
-(defun trade-request (info)
-  (let ((spec   '((opcode       u16r)
-		  (code         u8))))
-    (tmwchat-send-packet spec
-			 (list (cons 'opcode #xe7)
-			       (cons 'code 4)))))  ;; reject
-
 (defun whisper (info)
   (let ((nick (bindat-get-field info 'nick))
 	(msg (bindat-get-field info 'msg)))
@@ -280,7 +342,9 @@
 	  (whisper-message nick answer t)))
        ((string-prefix-p "!buylist" msg) nil)
        ((string-prefix-p "!buyitem" msg)
-	(whisper-message nick "cmd !buyitem not implemented"))
+	(if (tmwchat-parse-buyitem msg)
+	    (tmwchat-buyitem nick)
+	  (whisper-message nick "error !buyitem: parse error")))
        ((string-prefix-p "!sellitem" msg) nil)
        (t
 	(tmwchat--update-recent-users nick)
