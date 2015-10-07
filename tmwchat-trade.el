@@ -180,7 +180,7 @@
 	(tmwchat-trade-cancel-request)))))))
 
 (defun trade-complete (info)
-  (tmwchat-trade-log "Trade with %s completed. I sold %d of %s and got %d GP."
+  (tmwchat-trade-log "Trade with %s completed. I sold %d [%s] and got %d GP."
 		     tmwchat--trade-player
 		     tmwchat--trade-item-amount
 		     (gethash tmwchat--trade-item-id tmwchat-itemdb "<unknown>")

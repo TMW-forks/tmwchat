@@ -75,6 +75,8 @@ chatting with your Mana-friends. There are few built-in commands
 /turn left|right|up|down -- turn in given direction
 /block NickName -- block player (don't receive whispers, public chats, emotes)
 /equip ItemID  -- equip item ID
+/inv -- show inventory
+/zeny -- show money
 /dc -- disconnect
 Any other line simply acts as a command to send a chat message in public chat.
 ```
