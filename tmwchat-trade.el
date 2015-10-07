@@ -1,11 +1,11 @@
+(require 'tmwchat-inventory)
 
 (defcustom tmwchat-trade-selling nil
   "List of selling items"
   :group 'tmwchat
   :type '(repeat (list :tag "Selling"
 		       (integer :tag "ID")
-		       (integer :tag "Price")
-		       (integer :tag "Amount"))))
+		       (integer :tag "Price"))))
 
 (defvar tmwchat--trade-player ""
   "Player you currently trade with")
@@ -14,8 +14,7 @@
 (defvar tmwchat--trade-item-price 0)
 (defvar tmwchat--trade-player-offer 0)
 (defvar tmwchat--trade-player-should-pay 0)
-
-(defconst tmwchat-inventory-offset 2)
+(defvar tmwchat--trade-item-index -10)
 
 (defun tmwchat-encode-base94 (value size)
   (let ((output "")
@@ -32,18 +31,14 @@
   (let ((data "\302\202B1"))
     (dolist (item tmwchat-trade-selling)
       (let* ((id (car item))
-	     (price (caddr item))
-	     (amount (cadr item))
-	     (inv-amount (tmwchat-find-item-amount
-			  tmwchat-player-inventory
-			  id)))
-	;; (message "id=%d price=%d amount=%d" id price amount)
+	     (price (cadr item))
+	     (inv-amount (tmwchat-inventory-item-amount id)))
 	(when (>= inv-amount 0)
 	  (setq data (concat
 		      data
 		      (tmwchat-encode-base94 id 2)
 		      (tmwchat-encode-base94 price 4)
-		      (tmwchat-encode-base94 (min amount inv-amount) 3))))))
+		      (tmwchat-encode-base94 inv-amount 3))))))
     data))
 
 (defun tmwchat-parse-buyitem (msg)
@@ -79,11 +74,9 @@
     (unless (member nick tmwchat-blocked-players)
       (if (member player-id tmwchat-nearby-player-ids)
 	  (if selling
-	      (if (>= (tmwchat-find-item-amount
-		       tmwchat-player-inventory
-		       item-id)
+	      (if (>= (tmwchat-inventory-item-amount item-id)
 		      amount)
-		  (let ((real-price (caddr selling)))
+		  (let ((real-price (cadr selling)))
 		    (setq tmwchat--trade-player nick)
 		    (setq tmwchat--trade-player-should-pay
 			  (* amount real-price))
@@ -112,17 +105,16 @@
       )
      ((= code 3)
       (tmwchat-log "Trade accepted")
-      (let ((index (tmwchat-find-item-index
-		    tmwchat-player-inventory
-		    tmwchat--trade-item-id)))
-	 (if (> index -10)
-	     (progn
-	       (tmwchat-trade-add-item index tmwchat--trade-item-amount)
-	       (tmwchat-trade-add-complete))
-	   (progn
-	     (tmwchat-trade-cancel-request)
-	     (tmwchat--trade-reset-state)
-	     (tmwchat-log "I cancel trade")))))
+      (let ((index (tmwchat-inventory-item-index tmwchat--trade-item-id)))
+	(setq tmwchat--trade-item-index index)
+	(if (> index -10)
+	    (progn
+	      (tmwchat-trade-add-item index tmwchat--trade-item-amount)
+	      (tmwchat-trade-add-complete))
+	  (progn
+	    (tmwchat-trade-cancel-request)
+	    (tmwchat--trade-reset-state)
+	    (tmwchat-log "I cancel trade")))))
      ((= code 4)
       (tmwchat-log "Trade canceled")
       (tmwchat--trade-reset-state)))))
@@ -130,7 +122,7 @@
 (defun trade-item-add (info)
   (let ((amount (bindat-get-field info 'amount))
 	(id (bindat-get-field info 'id)))
-    (tmwchat-log "SMSG_TRADE_ITEM_ADD (buggy) id=%d amount=%d" id amount)
+    (tmwchat-log "SMSG_TRADE_ITEM_ADD id=%d amount=%d" id amount)
     (cond
      ((= id 0)
       (setq tmwchat--trade-player-offer amount))
@@ -149,6 +141,8 @@
 	(code (bindat-get-field info 'code)))
     (cond
      ((= code 0)
+      (player-inventory-remove (list (cons 'index index)
+				     (cons 'amount amount)))
       (tmwchat-log "trade-item-add-response index=%d amount=%d" index amount))
      ((= code 1)
       (tmwchat-log "%s is overweight" tmwchat--trade-player)
@@ -216,6 +210,7 @@
 (make-variable-buffer-local 'tmwchat-trade-request)
 
 (defun tmwchat-trade-cancel-request ()
+  (tmwchat-log "Trade canceled.")
   (write-u16 #x0ed))
 (make-variable-buffer-local 'tmwchat-trade-cancel-request)
 
@@ -225,6 +220,7 @@
         tmwchat--trade-player-should-pay 0
 	tmwchat--trade-item-id 0
 	tmwchat--trade-item-amount 0
-	tmwchat--trade-item-price 0))
+	tmwchat--trade-item-price 0
+	tmwchat--trade-item-index -10))
 
 (provide 'tmwchat-trade)
