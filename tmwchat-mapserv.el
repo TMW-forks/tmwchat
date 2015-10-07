@@ -428,16 +428,10 @@
 ;;-------------------------------------------------------------------
 (defun tmwchat-equip-item (id)
   (interactive "nItem ID:")
-  (defun find-item-index (lst id)
-    (cond
-     ((equal lst nil) -1)
-     ((equal id (cdr (assoc 'id (car lst))))
-      (cdr (assoc 'index (car lst))))
-     (t (find-item-index (cdr lst) id))))
   (let ((spec '((opcode    u16r)
 		(index     u16r)
 		(fill      2)))
-	(idx (find-item-index tmwchat-player-equipment id)))
+	(idx (tmwchat-inventory-item-index id)))
     (if (> idx -1)
 	(tmwchat-send-packet spec
 			     (list (cons 'opcode #xa9)
