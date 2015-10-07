@@ -7,6 +7,11 @@
 		       (integer :tag "ID")
 		       (integer :tag "Price"))))
 
+(defcustom tmwchat-shop-mode t
+  "Shop mode"
+  :group 'tmwchat
+  :type 'boolean)
+
 (defvar tmwchat--trade-player ""
   "Player you currently trade with")
 (defvar tmwchat--trade-item-id 0)

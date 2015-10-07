@@ -279,11 +279,11 @@
       (setq msg (tmwchat--remove-color
 		 (tmwchat-decode-string msg)))
       (cond
-       ((string-prefix-p "!selllist" msg)
+       ((and (string-prefix-p "!selllist" msg) tmwchat-shop-mode)
 	(let ((answer (tmwchat-selllist)))
 	  (whisper-message nick answer t)))
        ((string-prefix-p "!buylist" msg) nil)
-       ((string-prefix-p "!buyitem" msg)
+       ((and (string-prefix-p "!buyitem" msg) tmwchat-shop-mode)
 	(cond
 	 ((> (length tmwchat--trade-player) 0)
 	  (whisper-message nick "I am currently trading with someone. Please wait a bit."))
@@ -517,6 +517,8 @@
 				       tmwchat-auto-equip-interval
 				       'tmwchat-equip-random-item))
     (setq tmwchat--fetch-online-list-timer (run-at-time 5 30 'tmwchat--online-list))
+    (setq tmwchat-show-status-timer
+	  (run-at-time 10 60 'tmwchat-show-status))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x72)
 			       (cons 'account tmwchat--account)

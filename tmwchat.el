@@ -154,6 +154,12 @@
 (defvar tmwchat--adding-being-ids nil
   "Set of IDs that are being requested from server")
 
+(defconst tmwchat-status-emote #xc0
+  "Basic status emote")
+
+(defvar tmwchat-show-status-timer nil
+  "Timer for showing status emote")
+
 (setq tmwchat--online-list-0 nil)
 (setq tmwchat--online-list-1 nil)
 (setq tmwchat--online-list-number 0)
@@ -176,6 +182,8 @@
     (cancel-timer tmwchat--fetch-online-list-timer))
   (when (timerp tmwchat--random-equip-timer)
     (cancel-timer tmwchat--random-equip-timer))
+  (when (timerp tmwchat-show-status-timer)
+    (cancel-timer tmwchat-show-status-timer))
   (when (processp tmwchat--client-process)
     (delete-process tmwchat--client-process))
   (setq tmwchat-nearby-player-ids nil)
@@ -199,6 +207,14 @@
       (setq tmwchat--last-item-equipped next-id)
       (tmwchat-equip-item next-id)))))
 
+;;=================================================================
+(defun tmwchat-show-status ()
+  (let ((emote tmwchat-status-emote))
+    (when tmwchat-shop-mode
+      (setq emote (+ emote 1)))
+    (when tmwchat-away
+      (setq emote (+ emote 2)))
+    (show-emote emote)))
 
 ;;=================================================================
 (defun tmwchat-insert-url (href label)
