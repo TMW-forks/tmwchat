@@ -142,6 +142,7 @@
       "/stand -- Stand up\n"
       "/turn left|right|up|down -- turn in given direction\n"
       "/inv -- show player inventory\n"
+      "/zeny -- show player money\n"
       "/equip ID -- equip item id\n"
       "/block PlayerName  -- block player\n"
       "/dc -- disconnect\n"
@@ -158,6 +159,8 @@
     (tmwchat-stand))
    ((string-equal tmwchat-sent "/inv")
     (tmwchat-print-inventory))
+   ((string-equal tmwchat-sent "/zeny")
+    (tmwchat-log "You have %d GP." tmwchat-money))
    ((string-prefix-p "/turn " tmwchat-sent)
     (tmwchat-turn (substring tmwchat-sent 6)))
    ((string-prefix-p "/emote " tmwchat-sent)

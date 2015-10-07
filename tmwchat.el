@@ -161,6 +161,9 @@
 (defvar tmwchat--map-name nil
   "Current map name")
 
+(defvar tmwchat-money 0
+  "Money of player")
+
 
 ;;===================================================================
 (defun tmwchat--cleanup ()

@@ -82,9 +82,6 @@
 		    (setq tmwchat--trade-player nick)
 		    (setq tmwchat--trade-player-should-pay
 			  (* amount real-price))
-		    (whisper-message
-		     nick
-		     (format "That will be %d GP" tmwchat--trade-player-should-pay))
 		    (tmwchat-trade-request player-id))
 		(whisper-message nick "I don't have enough."))
 	    (whisper-message nick "I don't sell that."))
@@ -106,7 +103,10 @@
       (tmwchat--trade-reset-state)
       )
      ((= code 3)
-      (tmwchat-trade-log "Trade accepted")
+      (tmwchat-trade-log "Trade from %s accepted." tmwchat--trade-player)
+      (whisper-message
+       tmwchat--trade-player
+       (format "That will cost %d GP." tmwchat--trade-player-should-pay))
       (setq tmwchat--trade-cancel-timer
 	    (run-at-time 120 nil 'tmwchat-trade-cancel-request))
       (let ((index (tmwchat-inventory-item-index tmwchat--trade-item-id)))
@@ -117,11 +117,10 @@
 	      (tmwchat-trade-add-complete))
 	  (progn
 	    (tmwchat-trade-cancel-request)
-	    (tmwchat--trade-reset-state)
-	    (tmwchat-trade-log "I cancel trade")))))
+	    (tmwchat-trade-log "I cancel trade.")))))
      ((= code 4)
-      (tmwchat-trade-log "Trade canceled")
-      (tmwchat--trade-reset-state)))))
+      (tmwchat--trade-reset-state)
+      (tmwchat-trade-log "Trade canceled." tmwchat--trade-player)))))
 
 (defun trade-item-add (info)
   (let ((amount (bindat-get-field info 'amount))
@@ -134,8 +133,8 @@
       (whisper-message tmwchat--trade-player "Currently I accept only GP")
       (tmwchat-trade-cancel-request))
      (t
-      (tmwchat-trade-log "trade error")
-      (whisper-message tmwchat--trade-player "Trade error")
+      (tmwchat-trade-log "Trade error.")
+      (whisper-message tmwchat--trade-player "Trade error.")
       (tmwchat-trade-cancel-request)))))
 
 (defun trade-item-add-response (info)
@@ -181,7 +180,8 @@
 	(tmwchat-trade-cancel-request)))))))
 
 (defun trade-complete (info)
-  (tmwchat-trade-log "Trade with %s complete" tmwchat--trade-player)
+  (tmwchat-trade-log "Trade with %s completed." tmwchat--trade-player)
+  (setq tmwchat-money (+ tmwchat-money tmwchat--trade-player-offer))
   (when (timerp tmwchat--trade-cancel-timer)
     (cancel-timer tmwchat--trade-cancel-timer))
   (tmwchat--trade-reset-state))
@@ -228,6 +228,7 @@
 (defun tmwchat-trade-log (&rest args)
   (with-current-buffer (get-buffer-create "TMWChat-trade")
     (let ((msg (apply 'format args)))
+      (setq msg (format "[%s] %s" (tmwchat-time) msg))
       (goto-char (point-max))
       (insert msg)
       (newline))))

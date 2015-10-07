@@ -8,8 +8,10 @@
 	      (version       u8)
 	      (fill          17)
 	      (chars  repeat (eval (/ (- (bindat-get-field struct 'len) 24) 106))
-			     (id       vec   4)
-			     (fill          54)
+		             (id       vec   4)
+		             (exp      vec   4)
+			     (money       u32r)
+			     (fill          46)
 			     (level       u16r)
 			     (fill          14)
 			     (name    strz  24)
@@ -40,6 +42,8 @@
 	    (find-charslot
 	     tmwchat-charname
 	     (bindat-get-field info 'chars))))
+    (setq tmwchat-money
+	  (bindat-get-field info 'chars charslot 'money))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x66)
 			       (cons 'slot charslot)))))
