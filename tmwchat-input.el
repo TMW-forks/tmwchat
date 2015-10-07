@@ -1,9 +1,19 @@
 (require 'tmwchat-log)
+(require 'tmwchat-inventory)
 
 (defun tmwchat-show-beings ()
   (dolist (id tmwchat-nearby-player-ids)
     (let ((name (tmwchat-being-name id)))
       (tmwchat-log (format "%s (id:%s)" name id)))))
+
+
+(defun tmwchat-print-inventory ()
+  (maphash
+   (lambda (index cell)
+     (tmwchat-log "index=%d id=%d amount=%d" index
+		  (car cell) (cadr cell)))
+   tmwchat-player-inventory))
+
 
 (defun tmwchat--replace-whisper-cmd (nick)
   (interactive "sNick:")
@@ -131,6 +141,7 @@
       "/sit -- Sit down\n"
       "/stand -- Stand up\n"
       "/turn left|right|up|down -- turn in given direction\n"
+      "/inv -- show player inventory\n"
       "/equip ID -- equip item id\n"
       "/block PlayerName  -- block player\n"
       "/dc -- disconnect\n"
@@ -145,6 +156,8 @@
     (tmwchat-sit))
    ((string-equal tmwchat-sent "/stand")
     (tmwchat-stand))
+   ((string-equal tmwchat-sent "/inv")
+    (tmwchat-print-inventory))
    ((string-prefix-p "/turn " tmwchat-sent)
     (tmwchat-turn (substring tmwchat-sent 6)))
    ((string-prefix-p "/emote " tmwchat-sent)
