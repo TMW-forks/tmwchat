@@ -46,7 +46,10 @@
     (#x08e  ((len        u16r)
 	     (msg   strz (eval (- (bindat-get-field struct 'len) 4))))
 	    player-chat)
-    (#x0aa  5 player-equip)
+    (#x0aa  ((index      u16r)
+	     (type       u16r)
+	     (flag         u8))
+	     player-equip)
     (#x0a4  ((len        u16r)
 	     (items      repeat
 	       (eval (/ (- (bindat-get-field struct 'len) 4) 20))
