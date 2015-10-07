@@ -55,4 +55,28 @@
   (add-text-properties (point-min) tmwchat--start-point
 		       '(read-only t front-sticky t rear-nonsticky t)))
 
+(defun tmwchat-find-player-id (name)
+  "Find player ID by name."
+  (let ((found-id -1))
+    (maphash
+     (lambda (id pname)
+       (when (string-equal name pname)
+	 (setq found-id id)))
+     tmwchat-player-names)
+    found-id))
+
+(defun tmwchat-find-item-index (lst id)
+  (cond
+   ((equal lst nil) -10)
+   ((equal id (cdr (assoc 'id (car lst))))
+    (cdr (assoc 'index (car lst))))
+   (t (tmwchat-find-item-index (cdr lst) id))))
+
+(defun tmwchat-find-item-amount (lst id)
+  (cond
+   ((equal lst nil) 0)
+   ((equal id (cdr (assoc 'id (car lst))))
+    (cdr (assoc 'amount (car lst))))
+   (t (tmwchat-find-item-amount (cdr lst) id))))
+
 (provide 'tmwchat-util)
