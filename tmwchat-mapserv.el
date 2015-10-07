@@ -152,7 +152,7 @@
 	    (code           u8))
 	   trade-item-add-response)
     (#x0ee 0   trade-cancel)
-    (#x0f0 2   trade-complete)
+    (#x0f0 ((data vec 1))   trade-complete)
     (#x0ec ((who            u8))
 	   trade-ok)
     (#x097 ((len          u16r)
@@ -224,14 +224,6 @@
 	(job (bindat-get-field info 'job)))
     (tmwchat-add-being id job)))
 
-(defun player-inventory (info)
-  (let ((items (bindat-get-field info 'items)))
-    (setq tmwchat-player-inventory items)))
-
-(defun player-equipment (info)
-  (let ((items (bindat-get-field info 'items)))
-    (setq tmwchat-player-equipment items)))
-
 (defun player-update-1 (info)
   (let ((id (bindat-get-field info 'id))
 	(job (bindat-get-field info 'job)))
@@ -242,61 +234,6 @@
 	(job (bindat-get-field info 'job)))
     (tmwchat-add-being id job)))
 
-(defun player-inventory-add (info)
-
-  (defun add-or-update (lst id amount index)
-    (if (equal lst nil)
-	(list (list (cons 'amount amount)
-		    (cons 'id id)
-		    (cons 'index index)))
-      (let* ((head (car lst))
-	     (tail (cdr lst))
-	     (c-id (cdr (assoc 'id head)))
-	     (c-amount (cdr (assoc 'amount head)))
-	     (c-index (cdr (assoc 'index head))))
-	(if (and (= c-id id) (= c-index index))
-	;; (if (= c-index index)
-	    (let ((new-head (list (cons 'id id)
-				  (cons 'index index)
-				  (cons 'amount (+ c-amount amount)))))
-	      (cons new-head tail))
-	  (cons head (add-or-update tail id amount index))))))
-
-  (let ((id (bindat-get-field info 'id))
-	(amount (bindat-get-field info 'amount))
-	(index (bindat-get-field info 'index)))
-    (setq tmwchat-player-inventory
-	  (add-or-update tmwchat-player-inventory
-			 id
-			 amount
-			 index))))
-
-
-(defun player-inventory-remove (info)
-
-  (defun remove-or-update (lst amount index)
-    (if (equal lst nil)
-	nil
-      (let* ((head (car lst))
-	     (tail (cdr lst))
-	     (c-id (cdr (assoc 'id head)))
-	     (c-amount (cdr (assoc 'amount head)))
-	     (c-index (cdr (assoc 'index head))))
-	(if (= c-index index)
-	    (if (> c-amount amount)
-		(let ((new-head (list (cons 'id c-id)
-				      (cons 'index index)
-				      (cons 'amount (- c-amount amount)))))
-		  (cons new-head tail))
-	      tail)
-	  (cons head (remove-or-update tail amount index))))))
-
-  (let ((amount (bindat-get-field info 'amount))
-	(index (bindat-get-field info 'index)))
-    (setq tmwchat-player-inventory
-	  (remove-or-update tmwchat-player-inventory
-			    amount
-			    index))))
 
 (defun connection-problem (info)
   (let* ((code (bindat-get-field info 'code))

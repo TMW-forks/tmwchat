@@ -65,18 +65,4 @@
      tmwchat-player-names)
     found-id))
 
-(defun tmwchat-find-item-index (lst id)
-  (cond
-   ((equal lst nil) -10)
-   ((equal id (cdr (assoc 'id (car lst))))
-    (cdr (assoc 'index (car lst))))
-   (t (tmwchat-find-item-index (cdr lst) id))))
-
-(defun tmwchat-find-item-amount (lst id)
-  (cond
-   ((equal lst nil) 0)
-   ((equal id (cdr (assoc 'id (car lst))))
-    (cdr (assoc 'amount (car lst))))
-   (t (tmwchat-find-item-amount (cdr lst) id))))
-
 (provide 'tmwchat-util)

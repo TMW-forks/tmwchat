@@ -5,6 +5,7 @@
 (require 'tmwchat-loginsrv)
 (require 'tmwchat-charsrv)
 (require 'tmwchat-mapserv)
+(require 'tmwchat-inventory)
 (require 'tmwchat-speedbar)
 (require 'tmwchat-input)
 (require 'tmwchat-log)
@@ -143,10 +144,6 @@
   "Timer for sending PING to mapserv")
 (defvar tmwchat--random-equip-timer nil
   "Timer for equipping random item")
-(defvar tmwchat-player-inventory nil
-  "list containing player inventory items")
-(defvar tmwchat-player-equipment nil
-  "list containing player equipment")
 (defvar tmwchat--last-item-equipped 0
   "the ID of last random item that was equipped")
 
