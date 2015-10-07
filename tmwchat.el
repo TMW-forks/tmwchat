@@ -164,6 +164,9 @@
 (defvar tmwchat-money 0
   "Money of player")
 
+(defvar tmwchat-itemdb (make-hash-table :test 'equal)
+  "Item DB, containing item IDs and names")
+
 
 ;;===================================================================
 (defun tmwchat--cleanup ()
@@ -406,6 +409,9 @@
   (setq truncate-lines nil)
   (setq tmwchat--frame (selected-frame))
   (setq tmwchat--window (selected-window))
+  (tmwchat-read-itemdb
+   (concat tmwchat-root-directory "/itemdb.txt")
+   tmwchat-itemdb)
   (tmwchat-login tmwchat-server-host tmwchat-server-port))
 
 

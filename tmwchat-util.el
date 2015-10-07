@@ -65,4 +65,25 @@
      tmwchat-player-names)
     found-id))
 
+(defun tmwchat-read-itemdb (dbfile &optional dbhash)
+  (interactive "fPath to itemdb.txt: ")
+  (with-temp-buffer
+    (message "Loading itemdb from %s" dbfile)
+    (insert-file-contents dbfile)
+    (let ((itemsdb (or dbhash (make-hash-table :test 'equal))))
+      (while (not (eobp))
+	(let ((line (buffer-substring-no-properties
+		     (line-beginning-position)
+		     (line-end-position)))
+	      (item-id) (item-name))
+	  (when (string-match "^\\([0-9]+\\)[\t ]+\\(.+\\)" line)
+	    (setq item-id
+		  (string-to-int
+		   (substring line (match-beginning 1) (match-end 1)))
+		  item-name
+		  (substring line (match-beginning 2) (match-end 2)))
+	    (puthash item-id item-name itemsdb)))
+	(forward-line 1))
+      itemsdb)))
+
 (provide 'tmwchat-util)

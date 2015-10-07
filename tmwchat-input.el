@@ -10,8 +10,9 @@
 (defun tmwchat-print-inventory ()
   (maphash
    (lambda (index cell)
-     (tmwchat-log "index=%d id=%d amount=%d" index
-		  (car cell) (cadr cell)))
+     (tmwchat-log "index=%-5d id=%-7d amount=%-8d name=%s" index
+		  (car cell) (cadr cell)
+		  (gethash (car cell) tmwchat-itemdb "<unknown>")))
    tmwchat-player-inventory))
 
 
