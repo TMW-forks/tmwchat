@@ -165,6 +165,17 @@
 	(whisper-message nick "I don't see you nearby.")))))
 
 
+(defun tmwchat-trade-give-zeny (nick &optional zeny)
+  (let ((player-id (tmwchat-find-player-id nick)))
+    (if (member player-id tmwchat-nearby-player-ids)
+	(let ((zeny (or zeny tmwchat-money)))
+	  (setq tmwchat--trade-mode 'money
+		tmwchat--trade-player nick
+		tmwchat--trade-shop-should-pay zeny)
+	  (tmwchat-trade-request player-id))
+      (whisper-message nick "I don't see you nearby."))))
+
+
 (defun trade-request (info)
   (let ((spec   '((opcode       u16r)
 		  (code         u8))))
@@ -204,6 +215,12 @@
 	 (format "I offer %d GP." tmwchat--trade-shop-should-pay))
 	(tmwchat-trade-add-item 0 tmwchat--trade-shop-should-pay)
 	(tmwchat-trade-add-complete))
+       ((eq tmwchat--trade-mode 'money)
+	(whisper-message
+	 tmwchat--trade-player
+	 (format "Transferring %d GP." tmwchat--trade-shop-should-pay))
+	(tmwchat-trade-add-item 0 tmwchat--trade-shop-should-pay)
+	(tmwchat-trade-add-complete))
        (t
 	(tmwchat-trade-log "Trade error. Trade mode is %s" tmwchat--trade-mode)
 	(tmwchat-trade-cancel-request))))
@@ -237,6 +254,7 @@
 			    tmwchat-itemdb
 			    "UnknownItem")))
 	  (tmwchat-trade-cancel-request)))
+       ((eq tmwchat--trade-mode 'money) t)
        (t
 	(tmwchat-trade-log "Trade error. Trade mode is %s" tmwchat--trade-mode)
 	(tmwchat-trade-cancel-request))))
@@ -297,6 +315,8 @@
 			      tmwchat-itemdb
 			      "UnknownItem")))
 	    (tmwchat-trade-cancel-request))))
+       ((eq tmwchat--trade-mode 'money)
+	(tmwchat-trade-ok))
        (t
 	(tmwchat-trade-log "Trade error. Trade mode is %s" tmwchat--trade-mode)
 	(tmwchat-trade-cancel-request))))))
@@ -315,6 +335,10 @@
 		       tmwchat--trade-player
 		       tmwchat--trade-item-amount
 		       (gethash tmwchat--trade-item-id tmwchat-itemdb "<unknown>")
+		       tmwchat--trade-shop-should-pay))
+   ((eq tmwchat--trade-mode 'money)
+    (tmwchat-trade-log "Trade with %s completed. I transferred %d GP."
+		       tmwchat--trade-player
 		       tmwchat--trade-shop-should-pay)))
 
   (setq tmwchat-money (+ tmwchat-money tmwchat--trade-player-offer))

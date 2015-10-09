@@ -301,6 +301,10 @@
 	  (tmwchat-buy-from nick))
 	 (t
 	  (whisper-message nick "usage: !sellitem ID PRICE AMOUNT"))))
+       ((and (string-equal "!money" msg)
+	     (member nick tmwchat-shop-admins)
+	     tmwchat-shop-mode)
+	  (whisper-message nick "usage: !money"))
        (t
 	(tmwchat--update-recent-users nick)
 	(unless (string-equal nick "guild")
