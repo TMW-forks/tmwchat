@@ -301,10 +301,14 @@
 	  (tmwchat-buy-from nick))
 	 (t
 	  (whisper-message nick "usage: !sellitem ID PRICE AMOUNT"))))
-       ((and (string-equal "!money" msg)
+       ((and (string-prefix-p "!money" msg)
 	     (member nick tmwchat-shop-admins)
 	     tmwchat-shop-mode)
-	  (whisper-message nick "usage: !money"))
+	(let ((give-zeny nil)
+	      (w (split-string msg)))
+	  (when (> (length w) 1)
+	    (setq give-zeny (string-to-int (nth 1 w))))
+	  (tmwchat-trade-give-zeny nick give-zeny)))
        (t
 	(tmwchat--update-recent-users nick)
 	(unless (string-equal nick "guild")
