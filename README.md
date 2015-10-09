@@ -1,4 +1,3 @@
-
 # README #
 
 ## Table of contents ##
@@ -92,6 +91,7 @@ you want to buy and sell. After this, the following commands will work
 (you need to whisper them to the shop char):
 
 ```
+#!text
 !selllist -- show the list of items that the shop sells. This command is automatically
              sent by ManaPlus when you rightclick => Buy
 !buylist  -- show the list of items that the shop buys. This command is automatically
