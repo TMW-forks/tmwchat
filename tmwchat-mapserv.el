@@ -282,16 +282,25 @@
        ((and (string-prefix-p "!selllist" msg) tmwchat-shop-mode)
 	(let ((answer (tmwchat-selllist)))
 	  (whisper-message nick answer t)))
-       ((string-prefix-p "!buylist" msg) nil)
+       ((and (string-prefix-p "!buylist" msg) tmwchat-shop-mode)
+	(let ((answer (tmwchat-buylist)))
+	  (whisper-message nick answer t)))
        ((and (string-prefix-p "!buyitem" msg) tmwchat-shop-mode)
 	(cond
 	 ((> (length tmwchat--trade-player) 0)
 	  (whisper-message nick "I am currently trading with someone. Please wait a bit."))
-	 ((tmwchat-parse-buyitem msg)
-	  (tmwchat-buyitem nick))
+	 ((tmwchat-parse-shopcmd msg)
+	  (tmwchat-sell-to nick))
 	 (t
-	  (whisper-message nick "usage: !buyitem ID AMOUNT PRICE"))))
-       ((string-prefix-p "!sellitem" msg) nil)
+	  (whisper-message nick "usage: !buyitem ID PRICE AMOUNT"))))
+       ((and (string-prefix-p "!sellitem" msg) tmwchat-shop-mode)
+	(cond
+	 ((> (length tmwchat--trade-player) 0)
+	  (whisper-message nick "I am currently trading with someone. Please wait a bit."))
+	 ((tmwchat-parse-shopcmd msg)
+	  (tmwchat-buy-from nick))
+	 (t
+	  (whisper-message nick "usage: !sellitem ID PRICE AMOUNT"))))
        (t
 	(tmwchat--update-recent-users nick)
 	(unless (string-equal nick "guild")
