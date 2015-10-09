@@ -6,16 +6,18 @@
 2. Installation
 3. Configuration
 4. Usage
-5. Dependencies
-6. Author
-7. Links
-8. Special thanks
+5. Shop mode
+6. Dependencies
+7. Author
+8. Links
+9. Special thanks
 
 ## About ##
 TMWChat is a chat client for The Mana World MMORPG, running in Emacs. It supports
 sending and receiving messages on the world map, sending and receiving
 private messages (whispers), and emotes. A simple notification system allows
 the user to see a pop-up in the notification area, when Emacs window is not active.
+It also supports ManaPlus-compatible shop mode.
 
 ## Installation ##
 Add this to your Emacs init file:
@@ -82,6 +84,25 @@ Any other line simply acts as a command to send a chat message in public chat.
 ```
 
 Tab-completion for nicknames is supported.
+
+## Shop mode ##
+If you enable shop mode in settings, your chat client can act as a shop.
+In the customization window you need to add the item IDs, price and amount
+you want to buy and sell. After this, the following commands will work
+(you need to whisper them to the shop char):
+
+```
+!selllist -- show the list of items that the shop sells. This command is automatically
+             sent by ManaPlus when you rightclick => Buy
+!buylist  -- show the list of items that the shop buys. This command is automatically
+             sent by ManaPlus when you rightclick => Sell
+!buyitem ID PRICE AMOUNT  -- buy items from shop. Automatically sent by ManaPlus.
+!sellitem ID PRICE AMOUNT -- sell item to shop. Automatically sent by ManaPlus.
+!money [AMOUNT] -- retrieve money from shop. With this command you can also
+                   transfer items and money to the shop. If AMOUNT is omitted,
+		   retrieve all money from shop. This command works only if the
+		   person whispering to shop is set as shop admin in settings.
+```
 
 ## Dependencies ##
 * Emacs version 24.4 or higher
