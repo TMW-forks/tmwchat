@@ -52,6 +52,9 @@
     output))
 
 (defun tmwchat-selllist ()
+  (defun r ()
+    (+ 33 (random 61)))
+
   (let ((data "\302\202B1"))
     (dolist (item tmwchat-trade-selling)
       (let* ((id (car item))
@@ -63,9 +66,12 @@
 		      (tmwchat-encode-base94 id 2)
 		      (tmwchat-encode-base94 price 4)
 		      (tmwchat-encode-base94 inv-amount 3))))))
-    data))
+    (concat data (string (r) (r)))))
 
 (defun tmwchat-buylist ()
+  (defun r ()
+    (+ 33 (random 61)))
+
   (let ((data "\302\202S1"))
     (dolist (item tmwchat-trade-buying)
       (let* ((id (car item))
@@ -81,7 +87,7 @@
 		      (tmwchat-encode-base94 id 2)
 		      (tmwchat-encode-base94 price 4)
 		      (tmwchat-encode-base94 can-afford-amount 3))))))
-    data))
+    (concat data (string (r) (r)))))
 
 
 (defun tmwchat-parse-shopcmd (msg)
