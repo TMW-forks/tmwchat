@@ -244,8 +244,8 @@
 	(id (bindat-get-field info 'id)))
     (tmwchat-trade-log "%s added to trade %d %s"
 		       tmwchat--trade-player
-		       (tmwchat-item-name id t)
-		       amount)
+		       amount
+		       (tmwchat-item-name id t))
     (cond
      ((= id 0)
       (setq tmwchat--trade-player-offer amount))
