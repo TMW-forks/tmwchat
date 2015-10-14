@@ -183,6 +183,10 @@
 
 
 (defun trade-request (info)
+  (when tmwchat-shop-mode
+    (let ((nick (bindat-get-field info 'nick))
+	  (answer (tmwchat-selllist)))
+      (whisper-message nick answer t)))
   (let ((spec   '((opcode       u16r)
 		  (code         u8))))
     (tmwchat-send-packet spec
