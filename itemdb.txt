@@ -1,3 +1,4 @@
+0 GP
 501 Cactus Drink
 502 Cactus Potion
 506 Candy Cane
