@@ -8,12 +8,25 @@
 
 
 (defun tmwchat-print-inventory ()
-  (maphash
-   (lambda (index cell)
-     (tmwchat-log "index=%-5d id=%-7d amount=%-8d name=%s" index
-		  (car cell) (cadr cell)
-		  (gethash (car cell) tmwchat-itemdb "<unknown>")))
-   tmwchat-player-inventory))
+  (let ((comb-hash (make-hash-table))
+	(inv-str))
+    (maphash
+     (lambda (index cell)
+       (let ((id (car cell))
+	     (amount (cadr cell)))
+	 (incf (gethash id comb-hash 0) amount)))
+     tmwchat-player-inventory)
+    (maphash
+     (lambda (id amount)
+       (let ((name (tmwchat-item-name id t)))
+	 (push
+	  (if (> amount 1)
+	      (format "%d %s" amount name)
+	    name)
+	  inv-str)))
+     comb-hash)
+    (tmwchat-log "Player inventory: %s"
+		 (mapconcat 'identity inv-str ", "))))
 
 
 (defun tmwchat--replace-whisper-cmd (nick)
