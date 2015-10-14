@@ -340,13 +340,13 @@
 (defun trade-complete (info)
   (cond
    ((eq tmwchat--trade-mode 'sell)
-    (tmwchat-trade-log "Trade with %s completed. I sold %d [%s] and got %d GP."
+    (tmwchat-trade-log "Trade with %s completed. I sold %d %s and got %d GP."
 		       tmwchat--trade-player
 		       tmwchat--trade-item-amount
 		       (tmwchat-item-name tmwchat--trade-item-id)
 		       tmwchat--trade-player-offer))
    ((eq tmwchat--trade-mode 'buy)
-    (tmwchat-trade-log "Trade with %s completed. I bought %d [%s] for %d GP."
+    (tmwchat-trade-log "Trade with %s completed. I bought %d %s for %d GP."
 		       tmwchat--trade-player
 		       tmwchat--trade-item-amount
 		       (tmwchat-item-name tmwchat--trade-item-id)
