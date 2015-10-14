@@ -283,12 +283,12 @@
     (cond
      ((= code 0)
       (when (> amount 0)
-	(player-inventory-remove (list (cons 'index index)
-				       (cons 'amount amount)))
 	(tmwchat-trade-log "I added %d %s."
 			   amount
 			   (tmwchat-item-name
-			    (car (gethash index tmwchat-player-inventory '(0)))))))
+			    (car (gethash index tmwchat-player-inventory '(0)))))
+	(player-inventory-remove (list (cons 'index index)
+				       (cons 'amount amount)))))
      ((= code 1)
       (tmwchat-trade-log "%s is overweight" tmwchat--trade-player)
       (whisper-message tmwchat--trade-player "You seem to be overweight.")
