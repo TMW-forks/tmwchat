@@ -183,12 +183,12 @@
 
 
 (defun trade-request (info)
-  (when tmwchat-shop-mode
-    (let ((nick (bindat-get-field info 'nick))
-	  (answer (tmwchat-selllist)))
-      (whisper-message nick answer t)))
-  (let ((spec   '((opcode       u16r)
+  (let ((nick (bindat-get-field info 'nick))
+	(spec   '((opcode       u16r)
 		  (code         u8))))
+    (tmwchat-trade-log "Trade request from %s" nick)
+    (when tmwchat-shop-mode
+      (whisper-message nick (tmwchat-selllist) t))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #xe6)
 			       (cons 'code 4)))))  ;; reject
@@ -242,7 +242,10 @@
 (defun trade-item-add (info)
   (let ((amount (bindat-get-field info 'amount))
 	(id (bindat-get-field info 'id)))
-    (tmwchat-trade-log "SMSG_TRADE_ITEM_ADD id=%d amount=%d" id amount)
+    (tmwchat-trade-log "%s added to trade %d %s"
+		       tmwchat--trade-player
+		       (tmwchat-item-name id t)
+		       amount)
     (cond
      ((= id 0)
       (setq tmwchat--trade-player-offer amount))
@@ -279,7 +282,11 @@
      ((= code 0)
       (player-inventory-remove (list (cons 'index index)
 				     (cons 'amount amount)))
-      (tmwchat-trade-log "SMSG_TRADE_ITEM_ADD_RESPONSE index=%d amount=%d" index amount))
+      (tmwchat-trade-log "I added %d %s"
+			 amount
+			 (tmwchat-item-name
+			  (car (gethash index tmwchat-player-inventory '(0)))
+			  t)))
      ((= code 1)
       (tmwchat-trade-log "%s is overweight" tmwchat--trade-player)
       (whisper-message tmwchat--trade-player "You seem to be overweight.")
@@ -294,7 +301,7 @@
       (tmwchat-trade-cancel-request)))))
 
 (defun trade-cancel (info)
-  (tmwchat-trade-log "Trade canceled.")
+  (tmwchat-trade-log "Trade with %s canceled." tmwchat--trade-player)
   (when (timerp tmwchat--trade-cancel-timer)
     (cancel-timer tmwchat--trade-cancel-timer))
   (tmwchat--trade-reset-state))
