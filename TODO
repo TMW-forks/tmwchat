@@ -1,11 +1,11 @@
 
 * Batch mode
-* Support for few "active" commands (/sit, /move etc)
-* Chat logs
-* /debug command for toggling debug information
+* Support for few "active" commands (/sit, /move etc) (done)
+* Chat logs (done, imperfect)
+* /debug command for toggling debug information (done)
 * Speedbar integration (partly done)
-* BUG: Party chat support
-* Ignored users support
+* BUG: Party chat support (done)
+* Ignored users support (done)
 * /away command support (done)
 * Smarter notifications
 * /sound and /mute commands (done)
@@ -15,3 +15,5 @@
 * tab-completion for commands and nicknames
 * guild bot support
 * autoaway
+* migrate to deferred elisp library
+* instead of auto-cancel trade requests, show a "hint" message when in shop mode, or simply the sell list
