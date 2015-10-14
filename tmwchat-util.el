@@ -86,4 +86,12 @@
 	(forward-line 1))
       itemsdb)))
 
+(defun tmwchat-item-name (id &optional link)
+  "Get item [name] from itemdb.
+When link is non-nil, return [@@id|name@@]"
+  (let ((name (gethash id tmwchat-itemdb "Unknown")))
+    (if link
+	(format "[@@%d|%s@@]" id name)
+      (format "[%s]" name))))
+
 (provide 'tmwchat-util)
