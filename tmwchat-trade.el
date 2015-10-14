@@ -224,12 +224,14 @@
 	 tmwchat--trade-player
 	 (format "I offer %d GP." tmwchat--trade-shop-should-pay))
 	(tmwchat-trade-add-item 0 tmwchat--trade-shop-should-pay)
+	(tmwchat-trade-log "I add %d GP." tmwchat--trade-shop-should-pay)
 	(tmwchat-trade-add-complete))
        ((eq tmwchat--trade-mode 'money)
 	(whisper-message
 	 tmwchat--trade-player
 	 (format "Transferring %d GP." tmwchat--trade-shop-should-pay))
 	(tmwchat-trade-add-item 0 tmwchat--trade-shop-should-pay)
+	(tmwchat-trade-log "I add %d GP." tmwchat--trade-shop-should-pay)
 	(tmwchat-trade-add-complete))
        (t
 	(tmwchat-trade-log "Trade error. Trade mode is %s" tmwchat--trade-mode)
@@ -280,13 +282,13 @@
 	(code (bindat-get-field info 'code)))
     (cond
      ((= code 0)
-      (player-inventory-remove (list (cons 'index index)
-				     (cons 'amount amount)))
-      (tmwchat-trade-log "I added %d %s."
-			 amount
-			 (if (= index 0) "GP"
+      (when (> amount 0)
+	(player-inventory-remove (list (cons 'index index)
+				       (cons 'amount amount)))
+	(tmwchat-trade-log "I added %d %s."
+			   amount
 			   (tmwchat-item-name
-			    (car (gethash index tmwchat-player-inventory))))))
+			    (car (gethash index tmwchat-player-inventory '(0)))))))
      ((= code 1)
       (tmwchat-trade-log "%s is overweight" tmwchat--trade-player)
       (whisper-message tmwchat--trade-player "You seem to be overweight.")
