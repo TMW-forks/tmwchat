@@ -245,7 +245,7 @@
     (tmwchat-trade-log "%s added to trade %d %s"
 		       tmwchat--trade-player
 		       amount
-		       (tmwchat-item-name id t))
+		       (tmwchat-item-name id))
     (cond
      ((= id 0)
       (setq tmwchat--trade-player-offer amount))
@@ -285,8 +285,7 @@
       (tmwchat-trade-log "I added %d %s"
 			 amount
 			 (tmwchat-item-name
-			  (car (gethash index tmwchat-player-inventory '(0)))
-			  t)))
+			  (car (gethash index tmwchat-player-inventory '(0))))))
      ((= code 1)
       (tmwchat-trade-log "%s is overweight" tmwchat--trade-player)
       (whisper-message tmwchat--trade-player "You seem to be overweight.")
@@ -341,13 +340,13 @@
     (tmwchat-trade-log "Trade with %s completed. I sold %d [%s] and got %d GP."
 		       tmwchat--trade-player
 		       tmwchat--trade-item-amount
-		       (tmwchat-item-name tmwchat--trade-item-id t)
+		       (tmwchat-item-name tmwchat--trade-item-id)
 		       tmwchat--trade-player-offer))
    ((eq tmwchat--trade-mode 'buy)
     (tmwchat-trade-log "Trade with %s completed. I bought %d [%s] for %d GP."
 		       tmwchat--trade-player
 		       tmwchat--trade-item-amount
-		       (tmwchat-item-name tmwchat--trade-item-id t)
+		       (tmwchat-item-name tmwchat--trade-item-id)
 		       tmwchat--trade-shop-should-pay))
    ((eq tmwchat--trade-mode 'money)
     (tmwchat-trade-log "Trade with %s completed. I transferred %d GP."
