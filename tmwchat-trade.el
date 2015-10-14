@@ -256,9 +256,7 @@
 	   tmwchat--trade-player
 	   (format "You should give me %d [%s]."
 		   tmwchat--trade-item-amount
-		   (gethash tmwchat--trade-item-id
-			    tmwchat-itemdb
-			    "UnknownItem")))
+		   (tmwchat-item-name tmwchat--trade-item-id t)))
 	  (tmwchat-trade-cancel-request)))
        ((eq tmwchat--trade-mode 'money) t)
        (t
@@ -317,9 +315,7 @@
 	     tmwchat--trade-player
 	     (format "You should give me %d [%s]."
 		     tmwchat--trade-item-amount
-		     (gethash tmwchat--trade-item-id
-			      tmwchat-itemdb
-			      "UnknownItem")))
+		     (tmwchat-item-name tmwchat--trade-item-id t)))
 	    (tmwchat-trade-cancel-request))))
        ((eq tmwchat--trade-mode 'money)
 	(tmwchat-trade-ok))
@@ -334,13 +330,13 @@
     (tmwchat-trade-log "Trade with %s completed. I sold %d [%s] and got %d GP."
 		       tmwchat--trade-player
 		       tmwchat--trade-item-amount
-		       (gethash tmwchat--trade-item-id tmwchat-itemdb "<unknown>")
+		       (tmwchat-item-name tmwchat--trade-item-id t)
 		       tmwchat--trade-player-offer))
    ((eq tmwchat--trade-mode 'buy)
     (tmwchat-trade-log "Trade with %s completed. I bought %d [%s] for %d GP."
 		       tmwchat--trade-player
 		       tmwchat--trade-item-amount
-		       (gethash tmwchat--trade-item-id tmwchat-itemdb "<unknown>")
+		       (tmwchat-item-name tmwchat--trade-item-id t)
 		       tmwchat--trade-shop-should-pay))
    ((eq tmwchat--trade-mode 'money)
     (tmwchat-trade-log "Trade with %s completed. I transferred %d GP."
