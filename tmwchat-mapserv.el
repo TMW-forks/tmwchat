@@ -3,6 +3,8 @@
 (require 'tmwchat-util)
 (require 'tmwchat-trade)
 
+(defconst tmwchat-delay-between-messages 1.5)
+
 (defconst tmwchat--mapserv-packets
   '((#x08a  27 being-action)
     (#x09c  7  being-change-direction)
@@ -419,7 +421,8 @@
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x8c)
 			       (cons 'len (+ nlen 5))
-			       (cons 'msg nmsg)))))
+			       (cons 'msg nmsg))
+			 tmwchat-delay-between-messages)))
 (make-variable-buffer-local 'chat-message)
 
 (defun whisper-message (nick msg &optional nolog)
@@ -442,7 +445,8 @@
 			 (list (cons 'opcode #x096)
 			       (cons 'len (+ nlen 29))
 			       (cons 'nick nick)
-			       (cons 'msg nmsg)))))
+			       (cons 'msg nmsg))
+			 tmwchat-delay-between-messages)))
 (make-variable-buffer-local 'whisper-message)
 
 ;;-------------------------------------------------------------------
@@ -468,7 +472,8 @@
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x0108)
 			       (cons 'len (+ nlen 4))
-			       (cons 'msg nmsg)))))
+			       (cons 'msg nmsg))
+			 tmwchat-delay-between-messages)))
 
 ;;-------------------------------------------------------------------
 (defconst tmwchat--change-act-spec

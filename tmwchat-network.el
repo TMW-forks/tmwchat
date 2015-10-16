@@ -1,14 +1,37 @@
 (require 'cl)
 (require 'bindat)
+(require 'queue)
 (require 'tmwchat-log)
 
-(setq tmwchat--partial-packet nil)
+(defvar tmwchat--partial-packet nil
+  "If incoming packet is split to few parts, this variable holds part of it.")
 
-(defun tmwchat-send-packet (spec data &optional process)
-  (let ((process (or process tmwchat--client-process))
-	(bin-data (bindat-pack spec data)))
-    (tmwchat--debug-log (format ">> %s" data))
-    (process-send-string process bin-data)))
+(defvar tmwchat--outgoing-packets (make-queue)
+  "Queue for outgoing packets.")
+
+(defun tmwchat-send-packet (spec data &optional delay-after)
+
+  ;; NOTE: this might work buggy without real semaphore protection
+  (defun consume ()
+    (let* ((q tmwchat--outgoing-packets)
+	   (dd (queue-dequeue q))
+	   (data (cdr dd))
+	   (wait (car dd))
+	   (proc tmwchat--client-process))
+      (when data
+	(when (processp proc)
+	  (process-send-string proc data))
+	(when (queue-empty q)
+	  (queue-enqueue q (cons wait nil))))
+      (unless (queue-empty q)
+	(run-at-time wait nil 'consume))))
+
+  (let ((bin-data (bindat-pack spec data))
+	(delay-after (or delay-after 0))
+	(empty (queue-empty tmwchat--outgoing-packets)))
+    (queue-enqueue tmwchat--outgoing-packets
+		   (cons delay-after bin-data))
+    (when empty (consume))))
 
 ;;; unknown request skipping
 (defconst tmwchat--packet-lenghts
@@ -51,12 +74,10 @@
 
 
 ;;----------------------------------------------------------------------
-(defconst tmwchat--u16-spec
-  '((opcode        u16r)))
-
 (defun write-u16 (arg)
-  (tmwchat-send-packet tmwchat--u16-spec
-		       (list (cons 'opcode arg))))
+  (tmwchat-send-packet
+   '((opcode u16r))
+   (list (cons 'opcode arg))))
 (make-variable-buffer-local 'write-u16)
 
 (defun dispatch (packet packet-specs)

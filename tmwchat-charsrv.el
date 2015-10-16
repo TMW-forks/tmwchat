@@ -88,6 +88,7 @@
 
 (defun tmwchat--charserv-sentinel-function (process event)
   (when (string-equal event "deleted\n")
-      (tmwchat--connect-map-server tmwchat--mapserv-host tmwchat--mapserv-port)))
+    (queue-empty tmwchat--outgoing-packets)
+    (tmwchat--connect-map-server tmwchat--mapserv-host tmwchat--mapserv-port)))
 
 (provide 'tmwchat-charsrv)

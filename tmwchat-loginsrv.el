@@ -100,6 +100,7 @@
 
 (defun tmwchat--loginsrv-sentinel-function (process event)
   (when (string-equal event "deleted\n")
+    (queue-empty tmwchat--outgoing-packets)
     (tmwchat--connect-char-server tmwchat--charserv-host
 				  tmwchat--charserv-port)))
 
