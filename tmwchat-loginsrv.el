@@ -19,6 +19,9 @@
     (11 . "Incorrect email.")
     (99 . "Username permanently erased.")))
 
+(defvar tmwchat--reconnect-timer nil
+  "Timer for auto-reconnecting.")
+
 (defun tmwchat-login (server port)
   (let ((process (open-network-stream "tmwchat" tmwchat-buffer-name server port
 				      :type 'plain)))
@@ -99,9 +102,22 @@
   (dispatch packet tmwchat--loginsrv-packets))
 
 (defun tmwchat--loginsrv-sentinel-function (process event)
-  (when (string-equal event "deleted\n")
-    (queue-empty tmwchat--outgoing-packets)
-    (tmwchat--connect-char-server tmwchat--charserv-host
-				  tmwchat--charserv-port)))
+  (if (string-equal event "deleted\n")
+      (progn
+	(queue-empty tmwchat--outgoing-packets)
+	(tmwchat--connect-char-server tmwchat--charserv-host
+				      tmwchat--charserv-port))
+    (when tmwchat-auto-reconnect-interval
+      (tmwchat-reconnect tmwchat-auto-reconnect-interval))))
+
+(defun tmwchat-reconnect (&optional delay-seconds)
+  (let ((delay-seconds (or delay-seconds 0)))
+    (when (timerp tmwchat--reconnect-timer)
+      (cancel-timer tmwchat--reconnect-timer))
+    (message "Reconnecting in %d seconds")
+    (setq tmwchat--reconnect-timer
+	  (run-at-time delay-seconds nil
+		       'tmwchat-login tmwchat-server-host
+		       tmwchat-server-port))))
 
 (provide 'tmwchat-loginsrv)

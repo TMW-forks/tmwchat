@@ -551,8 +551,9 @@
 
 (defun tmwchat--mapserv-sentinel-function (process event)
   (if (string-equal event "deleted\n")
-      (message "Exited successfully")
-    (error event))
+      (tmwchat-log "Exited successfully")
+    (when tmwchat-auto-reconnect-interval
+      (tmwchat-reconnect tmwchat-auto-reconnect-interval)))
   (tmwchat--cleanup))
 
 (defun tmwchat--mapserv-filter-function (process packet)

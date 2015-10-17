@@ -95,12 +95,18 @@
 (defcustom tmwchat-auto-equip-interval 15
   "Interval betwee auto-equipping next item from `tmwchat-auto-equip-item-ids' list"
   :group 'tmwchat
-  :type '(repeat integer))
+  :type 'integer)
 
 (defcustom tmwchat-blocked-players nil
   "Blocked players list"
   :group 'tmwchat
   :type '(repeat string))
+
+(defcustom tmwchat-auto-reconnect-interval nil
+  "Interval between attempting auto-reconnect when connection is lost (seconds)."
+  :group 'tmwchat
+  :type '(choice (const :tag "Off" nil)
+		 (integer :tag "Seconds")))
 
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
@@ -336,7 +342,8 @@
       (kill-buffer (current-buffer))))
 
   (let ((url "http://server.themanaworld.org/online.txt"))
-    (url-retrieve url 'callback nil t t)))
+    (with-demoted-errors "url-retieve: %S"
+      (url-retrieve url 'callback nil t t))))
 
 (defun tmwchat-update-nearby-player-names (online-list)
   (dolist (id tmwchat-nearby-player-ids)
