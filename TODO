@@ -12,8 +12,9 @@
 * /ping command
 * reconnect when connection is lost
 * save unread "important" messages to a different buffer
-* tab-completion for commands and nicknames
+* tab-completion for commands and nicknames (done for names)
 * guild bot support
 * autoaway
 * migrate to deferred elisp library
-* instead of auto-cancel trade requests, show a "hint" message when in shop mode, or simply the sell list
+* instead of auto-cancel trade requests, show a "hint" message when in shop mode, or simply the sell list (done)
+* refactor: make hook-based system for receiving and sending messages, and processing them
