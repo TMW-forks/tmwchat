@@ -439,10 +439,7 @@
     (unless nolog
       (tmwchat-log "[-> %s] %s" nick msg)
       (tmwchat-log-file nick (format "[-> %s] %s" nick msg)))
-    ;; (when tmwchat-whispers-to-buffers
-    ;;   (tmwchat--whisper-to-buffer
-    ;;    nick
-    ;;    (format "[-> %s] %s" nick msg)))
+
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x096)
 			       (cons 'len (+ nlen 29))

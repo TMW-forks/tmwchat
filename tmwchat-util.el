@@ -8,7 +8,7 @@
 (defun tmwchat--contains-302-202 (str)
   "Check if string contains ManaPlus-specific messages with \302\202
    that breaks utf8 decoding"
-  (string-match-p "^#o302|#o202" str))
+  (string-match-p "#o302|#o202" str))
 
 (defun vec-less (v1 v2)
   (or (< (elt v1 3) (elt v2 3))

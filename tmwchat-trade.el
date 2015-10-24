@@ -20,6 +20,13 @@
   :group 'tmwchat
   :type 'boolean)
 
+(defcustom tmwchat-after-trade-hook nil
+  "List of functions to call after successful trade.
+Each function receives 2 hashtables: items gave and received."
+  :group 'tmwchat
+  :options '(tmwchat-show-successful-trade)
+  :type 'hook)
+
 (defcustom tmwchat-shop-admins nil
   "List of players who can freely add items to shop"
   :group 'tmwchat
@@ -39,6 +46,8 @@
   "Timer to cancel trade if player hesitates too long")
 (defvar tmwchat--trade-mode nil
   "Trade mode (nil, 'buy, 'sell)")
+(defvar tmwchat--trade-give-ids (make-hash-table :test 'equal))
+(defvar tmwchat--trade-receive-ids (make-hash-table :test 'equal))
 
 (defun tmwchat-encode-base94 (value size)
   (let ((output "")
@@ -131,9 +140,9 @@
 		          tmwchat--trade-player-should-pay
 			  (* amount real-price))
 		    (tmwchat-trade-request player-id))
-		(whisper-message nick "I don't have enough."))
-	    (whisper-message nick "I don't sell that."))
-	(whisper-message nick "I don't see you nearby.")))))
+		(whisper-message nick "I don't have enough." t))
+	    (whisper-message nick "I don't sell that." t))
+	(whisper-message nick "I don't see you nearby." t)))))
 
 
 (defun tmwchat-buy-from (nick &optional item-id price amount)
@@ -165,10 +174,10 @@
 				tmwchat--trade-shop-should-pay real-price
 				tmwchat--trade-mode 'buy)
 			  (tmwchat-trade-request player-id))
-		      (whisper-message nick "I can't afford that.")))
-		(whisper-message nick "I don't need that much."))
-	    (whisper-message nick "I don't buy that."))
-	(whisper-message nick "I don't see you nearby.")))))
+		      (whisper-message nick "I can't afford that." t)))
+		(whisper-message nick "I don't need that much." t))
+	    (whisper-message nick "I don't buy that." t))
+	(whisper-message nick "I don't see you nearby." t)))))
 
 
 (defun tmwchat-trade-give-zeny (nick &optional zeny)
@@ -179,7 +188,7 @@
 		tmwchat--trade-player nick
 		tmwchat--trade-shop-should-pay zeny)
 	  (tmwchat-trade-request player-id))
-      (whisper-message nick "I don't see you nearby."))))
+      (whisper-message nick "I don't see you nearby." t))))
 
 
 (defun trade-request (info)
@@ -198,7 +207,7 @@
     (cond
      ((= code 0)
       (tmwchat-trade-log "Trade response: too far away")
-      (whisper-message tmwchat--trade-player "You are too far away.")
+      (whisper-message tmwchat--trade-player "You are too far away." t)
       (tmwchat--trade-reset-state))
 
      ((= code 3)
@@ -209,7 +218,8 @@
        ((eq tmwchat--trade-mode 'sell)
 	(whisper-message
 	 tmwchat--trade-player
-	 (format "That will cost %d GP." tmwchat--trade-player-should-pay))
+	 (format "That will cost %d GP." tmwchat--trade-player-should-pay)
+	 t)
 	(let ((index (tmwchat-inventory-item-index tmwchat--trade-item-id)))
 	  (if (> index -10)
 	      (progn
@@ -222,14 +232,17 @@
        ((eq tmwchat--trade-mode 'buy)
 	(whisper-message
 	 tmwchat--trade-player
-	 (format "I offer %d GP." tmwchat--trade-shop-should-pay))
+	 (format "I offer %d GP." tmwchat--trade-shop-should-pay)
+	 t)
 	(tmwchat-trade-add-item 0 tmwchat--trade-shop-should-pay)
+	(puthash 0 tmwchat--trade-shop-should-pay tmwchat--trade-give-ids)
 	(tmwchat-trade-log "I add %d GP." tmwchat--trade-shop-should-pay)
 	(tmwchat-trade-add-complete))
        ((eq tmwchat--trade-mode 'money)
 	(whisper-message
 	 tmwchat--trade-player
-	 (format "Transferring %d GP." tmwchat--trade-shop-should-pay))
+	 (format "Transferring %d GP." tmwchat--trade-shop-should-pay)
+	 t)
 	(tmwchat-trade-add-item 0 tmwchat--trade-shop-should-pay)
 	(tmwchat-trade-log "I add %d GP." tmwchat--trade-shop-should-pay)
 	(tmwchat-trade-add-complete))
@@ -250,11 +263,13 @@
 		       (tmwchat-item-name id))
     (cond
      ((= id 0)
-      (setq tmwchat--trade-player-offer amount))
+      (setq tmwchat--trade-player-offer amount)
+      (puthash id amount tmwchat--trade-receive-ids))
      ((> id 0)
+      (incf (gethash id tmwchat--trade-receive-ids 0) amount)
       (cond
        ((eq tmwchat--trade-mode 'sell)
-	(whisper-message tmwchat--trade-player "I accept only GP.")
+	(whisper-message tmwchat--trade-player "I accept only GP." t)
 	(tmwchat-trade-cancel-request))
        ((eq tmwchat--trade-mode 'buy)
 	(setq tmwchat--trade-player-item-id id
@@ -265,7 +280,8 @@
 	   tmwchat--trade-player
 	   (format "You should give me %d [%s]."
 		   tmwchat--trade-item-amount
-		   (tmwchat-item-name tmwchat--trade-item-id t)))
+		   (tmwchat-item-name tmwchat--trade-item-id t))
+	   t)
 	  (tmwchat-trade-cancel-request)))
        ((eq tmwchat--trade-mode 'money) t)
        (t
@@ -283,23 +299,24 @@
     (cond
      ((= code 0)
       (when (> amount 0)
-	(tmwchat-trade-log "I added %d %s."
-			   amount
-			   (tmwchat-item-name
-			    (car (gethash index tmwchat-player-inventory '(0)))))
+	(let ((id (car (gethash index tmwchat-player-inventory '(0)))))
+	  (incf (gethash id tmwchat--trade-give-ids 0) amount)
+	  (tmwchat-trade-log "I added %d %s."
+			     amount
+			     (tmwchat-item-name id)))
 	(player-inventory-remove (list (cons 'index index)
 				       (cons 'amount amount)))))
      ((= code 1)
       (tmwchat-trade-log "%s is overweight" tmwchat--trade-player)
-      (whisper-message tmwchat--trade-player "You seem to be overweight.")
+      (whisper-message tmwchat--trade-player "You seem to be overweight." t)
       (tmwchat-trade-cancel-request))
      ((= code 2)
       (tmwchat-trade-log "%s has no free slots" tmwchat--trade-player)
-      (whisper-message tmwchat--trade-player "You don't have free slots.")
+      (whisper-message tmwchat--trade-player "You don't have free slots." t)
       (tmwchat-trade-cancel-request))
      (t
       (tmwchat-trade-log "Unknown trade error.")
-      (whisper-message tmwchat--trade-player "Unknown trade error.")
+      (whisper-message tmwchat--trade-player "Unknown trade error." t)
       (tmwchat-trade-cancel-request)))))
 
 (defun trade-cancel (info)
@@ -317,7 +334,7 @@
 	(if (>= tmwchat--trade-player-offer tmwchat--trade-player-should-pay)
 	    (tmwchat-trade-ok)
 	  (progn
-	    (whisper-message tmwchat--trade-player "Your offer makes me sad.")
+	    (whisper-message tmwchat--trade-player "Your offer makes me sad." t)
 	    (tmwchat-trade-cancel-request))))
        ((eq tmwchat--trade-mode 'buy)
 	(if (and (= tmwchat--trade-player-item-id tmwchat--trade-item-id)
@@ -326,9 +343,10 @@
 	  (progn
 	    (whisper-message
 	     tmwchat--trade-player
-	     (format "You should give me %d [%s]."
+	     (format "You should give me %d %s."
 		     tmwchat--trade-item-amount
-		     (tmwchat-item-name tmwchat--trade-item-id t)))
+		     (tmwchat-item-name tmwchat--trade-item-id t))
+	     t)
 	    (tmwchat-trade-cancel-request))))
        ((eq tmwchat--trade-mode 'money)
 	(tmwchat-trade-ok))
@@ -355,7 +373,9 @@
     (tmwchat-trade-log "Trade with %s completed. I transferred %d GP."
 		       tmwchat--trade-player
 		       tmwchat--trade-shop-should-pay)))
-
+  (run-hook-with-args 'tmwchat-after-trade-hook
+		      tmwchat--trade-give-ids
+		      tmwchat--trade-receive-ids)
   (setq tmwchat-money (+ tmwchat-money tmwchat--trade-player-offer))
   (setq tmwchat-money (- tmwchat-money tmwchat--trade-shop-should-pay))
   (when (timerp tmwchat--trade-cancel-timer)
@@ -393,6 +413,8 @@
 (make-variable-buffer-local 'tmwchat-trade-cancel-request)
 
 (defun tmwchat--trade-reset-state ()
+  (clrhash tmwchat--trade-give-ids)
+  (clrhash tmwchat--trade-receive-ids)
   (setq tmwchat--trade-player ""
         tmwchat--trade-player-offer 0
         tmwchat--trade-player-should-pay 0
@@ -411,5 +433,24 @@
       (goto-char (point-max))
       (insert msg)
       (newline))))
+
+(defun tmwchat-show-successful-trade (gave received)
+
+  (defun item-names (table)
+    (let ((item-repr))
+      (maphash
+       (lambda (id amount)
+	 (let ((name (tmwchat-item-name id t)))
+	   (push
+	    (if (> amount 1)
+		(format "%d %s" amount name)
+	      name)
+	    item-repr)))
+       table)
+      (mapconcat 'identity item-repr ", ")))
+
+  (let ((gave-repr (or (item-names gave) "nothing"))
+	(received-repr (or (item-names received) "nothing")))
+    (tmwchat-log "[TRADE] %s <==> %s" gave-repr received-repr)))
 
 (provide 'tmwchat-trade)
