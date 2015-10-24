@@ -10,7 +10,7 @@
 * Smarter notifications
 * /sound and /mute commands (done)
 * /ping command
-* reconnect when connection is lost
+* reconnect when connection is lost (done)
 * save unread "important" messages to a different buffer
 * tab-completion for commands and nicknames (done for names)
 * guild bot support
