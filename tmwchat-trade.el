@@ -15,8 +15,8 @@
 		       (integer :tag "Price")
 		       (integer :tag "Max amount"))))
 
-(defcustom tmwchat-shop-mode t
-  "Shop mode"
+(defcustom tmwchat-shop-mode nil
+  "Shop mode."
   :group 'tmwchat
   :type 'boolean)
 
