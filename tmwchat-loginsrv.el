@@ -22,22 +22,34 @@
 (defvar tmwchat--reconnect-timer nil
   "Timer for auto-reconnecting.")
 
+(defvar tmwchat--reconnecting nil
+  "Whether reconnecting/wait is in process")
+
 (defun tmwchat-login (server port)
-  (let ((process (open-network-stream "tmwchat" tmwchat-buffer-name server port
-				      :type 'plain)))
-    (unless (processp process)
-      (error "Connection attempt failed"))
-    (tmwchat-log (format "Connected to login server %s:%d" server port))
-    (set-process-coding-system process 'binary 'binary)
-    (setq tmwchat--client-process process)
-    (set-process-filter process 'tmwchat--loginsrv-filter-function)
-    (set-process-sentinel process 'tmwchat--loginsrv-sentinel-function)
-    (write-u16 #x7530)))  ;; request_version
+  (let ((process))
+    (condition-case err
+	(setq process
+	      (open-network-stream "tmwchat"
+				   tmwchat-buffer-name
+				   server port
+				   :type 'plain))
+      (error
+       (message "Error: %S" err)
+       (when tmwchat-auto-reconnect-interval
+	 (tmwchat-reconnect tmwchat-auto-reconnect-interval))))
+
+    (when (processp process)
+      (setq tmwchat--reconnecting nil)
+      (tmwchat-log (format "Connected to login server %s:%d" server port))
+      (set-process-coding-system process 'binary 'binary)
+      (setq tmwchat--client-process process)
+      (set-process-filter process 'tmwchat--loginsrv-filter-function)
+      (set-process-sentinel process 'tmwchat--loginsrv-sentinel-function)
+      (write-u16 #x7530))))  ;; request_version
 
 (defun tmwchat-logoff ()
-  (unless (processp tmwchat--client-process)
-    (error "Client is not connected"))
-  (delete-process tmwchat--client-process))
+  (ignore-errors
+    (delete-process tmwchat--client-process)))
 
 (defconst tmwchat--loginsrv-packets
   '((#x7531  ((fill          8))   server-version)
@@ -93,10 +105,12 @@
   (delete-process tmwchat--client-process))
 
 (defun login-error (info)
-  (error "Login error (%s): %s"
-	 (bindat-get-field info 'date)
-	 (cdr (assoc (bindat-get-field info 'code)
-		     tmwchat-login-error))))
+  (let* ((date (bindat-get-field info 'date))
+	 (code (bindat-get-field info 'code))
+	 (msg (cdr (assoc code tmwchat-login-error))))
+    (tmwchat-log "Login error (%s): %s" date msg)
+    (when tmwchat-auto-reconnect-interval
+      (tmwchat-reconnect tmwchat-auto-reconnect-interval))))
 
 (defun tmwchat--loginsrv-filter-function (process packet)
   (dispatch packet tmwchat--loginsrv-packets))
@@ -112,12 +126,15 @@
 
 (defun tmwchat-reconnect (&optional delay-seconds)
   (let ((delay-seconds (or delay-seconds 0)))
-    (when (timerp tmwchat--reconnect-timer)
-      (cancel-timer tmwchat--reconnect-timer))
-    (message "Reconnecting in %d seconds")
-    (setq tmwchat--reconnect-timer
-	  (run-at-time delay-seconds nil
-		       'tmwchat-login tmwchat-server-host
-		       tmwchat-server-port))))
+    (unless tmwchat--reconnecting
+      (setq tmwchat--reconnecting t)
+      (when (timerp tmwchat--reconnect-timer)
+	(cancel-timer tmwchat--reconnect-timer))
+      (message "Reconnecting in %d seconds" delay-seconds)
+      (tmwchat--cleanup)
+      (setq tmwchat--reconnect-timer
+	    (run-at-time delay-seconds nil
+			 'tmwchat-login tmwchat-server-host
+			 tmwchat-server-port)))))
 
 (provide 'tmwchat-loginsrv)

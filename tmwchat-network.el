@@ -19,8 +19,12 @@
 	   (wait (car dd))
 	   (proc tmwchat--client-process))
       (when data
-	(when (processp proc)
-	  (process-send-string proc data))
+	(condition-case err
+	    (process-send-string proc data)
+	  (error
+	   (message "Error: %S" err)
+	   (when tmwchat-auto-reconnect-interval
+	     (tmwchat-reconnect tmwchat-auto-reconnect-interval))))
 	(when (queue-empty q)
 	  (queue-enqueue q (cons wait nil))))
       (unless (queue-empty q)

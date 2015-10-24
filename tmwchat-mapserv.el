@@ -248,7 +248,9 @@
 		  "Account already in use"
 		(format "%s" code))))
     (tmwchat-log "Connection problem: %s" err)
-    (tmwchat-logoff)))
+    (tmwchat-logoff)
+    (when tmwchat-auto-reconnect-interval
+	 (tmwchat-reconnect tmwchat-auto-reconnect-interval))))
 
 (defun player-chat (info)
   (let ((msg (bindat-get-field info 'msg)))
@@ -524,30 +526,39 @@
 		(session1      vec 4)
 		(session2      vec 4)
 		(gender        u8)))
-	(process (open-network-stream "tmwchat" tmwchat-buffer-name server port
-				      :type 'plain)))
-    (unless (processp process)
-      (error "Connection attempt failed"))
-    (tmwchat-log (format "Connected to map server to %s:%d" server port))
-    (setq tmwchat--client-process process)
-    (set-process-coding-system process 'binary 'binary)
-    (set-process-filter process 'tmwchat--mapserv-filter-function)
-    (set-process-sentinel process 'tmwchat--mapserv-sentinel-function)
-    (setq tmwchat-ping-mapserv-timer (run-at-time 15 15 'tmwchat-ping-mapserv))
-    (setq tmwchat--random-equip-timer (run-at-time
-				       10
-				       tmwchat-auto-equip-interval
-				       'tmwchat-equip-random-item))
-    (setq tmwchat--fetch-online-list-timer (run-at-time 5 30 'tmwchat--online-list))
-    (setq tmwchat-show-status-timer
-	  (run-at-time 10 60 'tmwchat-show-status))
-    (tmwchat-send-packet spec
-			 (list (cons 'opcode #x72)
-			       (cons 'account tmwchat--account)
-			       (cons 'char-id tmwchat--char-id)
-			       (cons 'session1 tmwchat--session1)
-			       (cons 'session2 tmwchat--session2)
-			       (cons 'gender tmwchat--gender)))))
+	(process))
+    (condition-case err
+	(setq process
+	      (open-network-stream "tmwchat"
+				   tmwchat-buffer-name
+				   server port
+				   :type 'plain))
+      (error
+       (message "Error: %S" err)
+       (when tmwchat-auto-reconnect-interval
+	 (tmwchat-reconnect tmwchat-auto-reconnect-interval))))
+
+    (when (processp process)
+      (tmwchat-log (format "Connected to map server to %s:%d" server port))
+      (setq tmwchat--client-process process)
+      (set-process-coding-system process 'binary 'binary)
+      (set-process-filter process 'tmwchat--mapserv-filter-function)
+      (set-process-sentinel process 'tmwchat--mapserv-sentinel-function)
+      (setq tmwchat-ping-mapserv-timer (run-at-time 15 15 'tmwchat-ping-mapserv))
+      (setq tmwchat--random-equip-timer (run-at-time
+					 10
+					 tmwchat-auto-equip-interval
+					 'tmwchat-equip-random-item))
+      (setq tmwchat--fetch-online-list-timer (run-at-time 5 30 'tmwchat--online-list))
+      (setq tmwchat-show-status-timer
+	    (run-at-time 10 60 'tmwchat-show-status))
+      (tmwchat-send-packet spec
+			   (list (cons 'opcode #x72)
+				 (cons 'account tmwchat--account)
+				 (cons 'char-id tmwchat--char-id)
+				 (cons 'session1 tmwchat--session1)
+				 (cons 'session2 tmwchat--session2)
+				 (cons 'gender tmwchat--gender))))))
 
 (defun tmwchat--mapserv-sentinel-function (process event)
   (if (string-equal event "deleted\n")
@@ -571,8 +582,6 @@
       (let ((name-m (format "{{ID:%s}}" id)))
 	(tmwchat-add-being id 1)
 	name-m))))
-
-
 
 (make-variable-buffer-local 'tmwchat-being-name)
 

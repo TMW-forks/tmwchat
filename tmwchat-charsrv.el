@@ -50,7 +50,9 @@
 
 (defun charserv-error (info)
   (let ((code (bindat-get-field info 'code)))
-    (error "Charserv error: %s" code)))
+    (tmwchat-log "Charserv error: %s" code)
+    (when tmwchat-auto-reconnect-interval
+      (tmwchat-reconnect tmwchat-auto-reconnect-interval))))
 
 (defun char-map-info (info)
   (setq tmwchat--char-id (bindat-get-field info 'char-id)
@@ -66,22 +68,31 @@
 		  (session2      vec 4)
 		  (proto         u16r)
 		  (gender        u8)))
-	(process (open-network-stream "tmwchat" tmwchat-buffer-name server port
-				      :type 'plain)))
-    (unless (processp process)
-      (error "Connection attempt failed"))
-    (tmwchat-log (format "Connected to character server %s:%d" server port))
-    (setq tmwchat--client-process process)
-    (set-process-coding-system process 'binary 'binary)
-    (set-process-filter process 'tmwchat--charserv-filter-function)
-    (set-process-sentinel process 'tmwchat--charserv-sentinel-function)
-    (tmwchat-send-packet spec
-			 (list (cons 'opcode #x65)
-			       (cons 'account tmwchat--account)
-			       (cons 'session1 tmwchat--session1)
-			       (cons 'session2 tmwchat--session2)
-			       (cons 'proto 1)
-			       (cons 'gender tmwchat--gender)))))
+	(process))
+    (condition-case err
+	(setq process
+	      (open-network-stream "tmwchat"
+				   tmwchat-buffer-name
+				   server port
+				   :type 'plain))
+      (error
+       (message "Error: %S" err)
+       (when tmwchat-auto-reconnect-interval
+	 (tmwchat-reconnect tmwchat-auto-reconnect-interval))))
+
+    (when (processp process)
+      (tmwchat-log (format "Connected to character server %s:%d" server port))
+      (setq tmwchat--client-process process)
+      (set-process-coding-system process 'binary 'binary)
+      (set-process-filter process 'tmwchat--charserv-filter-function)
+      (set-process-sentinel process 'tmwchat--charserv-sentinel-function)
+      (tmwchat-send-packet spec
+			   (list (cons 'opcode #x65)
+				 (cons 'account tmwchat--account)
+				 (cons 'session1 tmwchat--session1)
+				 (cons 'session2 tmwchat--session2)
+				 (cons 'proto 1)
+				 (cons 'gender tmwchat--gender))))))
 
 (defun tmwchat--charserv-filter-function (process packet)
   (dispatch packet tmwchat--charserv-packets))
