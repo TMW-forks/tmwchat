@@ -283,32 +283,40 @@
       (setq msg (tmwchat--remove-color
 		 (tmwchat-decode-string msg)))
       (cond
-       ((and (string-prefix-p "!selllist" msg) tmwchat-shop-mode)
-	(let ((answer (tmwchat-selllist)))
-	  (whisper-message nick answer t)))
-       ((and (string-prefix-p "!buylist" msg) tmwchat-shop-mode)
-	(let ((answer (tmwchat-buylist)))
-	  (whisper-message nick answer t)))
-       ((and (string-prefix-p "!buyitem" msg) tmwchat-shop-mode)
-	(cond
-	 ((> (length tmwchat--trade-player) 0)
-	  (whisper-message nick "I am currently trading with someone. Please wait a bit."))
-	 ((tmwchat-parse-shopcmd msg)
-	  (tmwchat-sell-to nick))
-	 (t
-	  (whisper-message nick "usage: !buyitem ID PRICE AMOUNT"))))
-       ((and (string-prefix-p "!sellitem" msg) tmwchat-shop-mode)
-	(cond
-	 ((> (length tmwchat--trade-player) 0)
-	  (whisper-message nick "I am currently trading with someone. Please wait a bit."))
-	 ((tmwchat-parse-shopcmd msg)
-	  (tmwchat-buy-from nick))
-	 (t
-	  (whisper-message nick "usage: !sellitem ID PRICE AMOUNT"))))
+       ((string-prefix-p "!selllist" msg)
+	(when tmwchat-shop-mode
+	  (let ((answer (tmwchat-selllist)))
+	    (whisper-message nick answer t))))
+       ((string-prefix-p "!buylist" msg)
+	(when tmwchat-shop-mode
+	  (let ((answer (tmwchat-buylist)))
+	    (whisper-message nick answer t))))
+       ((string-prefix-p "!buyitem" msg)
+	(when tmwchat-shop-mode
+	  (cond
+	   ((> (length tmwchat--trade-player) 0)
+	    (whisper-message nick
+			     "I am currently trading with someone. Please wait a bit."
+			     t))
+	   ((tmwchat-parse-shopcmd msg)
+	    (tmwchat-sell-to nick))
+	   (t
+	    (whisper-message nick "usage: !buyitem ID PRICE AMOUNT" t)))))
+       ((string-prefix-p "!sellitem" msg)
+	(when tmwchat-shop-mode
+	  (cond
+	   ((> (length tmwchat--trade-player) 0)
+	    (whisper-message nick
+			     "I am currently trading with someone. Please wait a bit."
+			     t))
+	   ((tmwchat-parse-shopcmd msg)
+	    (tmwchat-buy-from nick))
+	   (t
+	    (whisper-message nick "usage: !sellitem ID PRICE AMOUNT" t)))))
        ((and (string-prefix-p "!money" msg)
 	     (member nick tmwchat-shop-admins)
 	     tmwchat-shop-mode)
-	(let ((give-zeny nil)
+	(let ((give-zeny)
 	      (w (split-string msg)))
 	  (when (> (length w) 1)
 	    (setq give-zeny (string-to-int (nth 1 w))))
