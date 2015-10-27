@@ -10,7 +10,7 @@
 (defcustom tmwchat-trade-buying nil
   "List of item IDs you want to buy."
   :group 'tmwchat
-  :type '(repeat (list :tag "Selling"
+  :type '(repeat (list :tag "Buying"
 		       (integer :tag "ID")
 		       (integer :tag "Price")
 		       (integer :tag "Max amount"))))
@@ -24,7 +24,7 @@
   "List of functions to call after successful trade.
 Each function receives 2 hashtables: items gave and received."
   :group 'tmwchat
-  :options '(tmwchat-show-successful-trade)
+  :options '(tmwchat-show-successful-trade tmwchat-trade-notify-admins)
   :type 'hook)
 
 (defcustom tmwchat-shop-admins nil
@@ -374,6 +374,7 @@ Each function receives 2 hashtables: items gave and received."
 		       tmwchat--trade-player
 		       tmwchat--trade-shop-should-pay)))
   (run-hook-with-args 'tmwchat-after-trade-hook
+		      tmwchat--trade-player
 		      tmwchat--trade-give-ids
 		      tmwchat--trade-receive-ids)
   (setq tmwchat-money (+ tmwchat-money tmwchat--trade-player-offer))
@@ -434,23 +435,45 @@ Each function receives 2 hashtables: items gave and received."
       (insert msg)
       (newline))))
 
-(defun tmwchat-show-successful-trade (gave received)
+(defun tmwchat--item-names (table)
+  (let (item-repr)
+    (maphash
+     (lambda (id amount)
+       (let ((name (tmwchat-item-name id t)))
+	 (push
+	  (if (> amount 1)
+	      (format "%d %s" amount name)
+	    name)
+	  item-repr)))
+     table)
+    (mapconcat 'identity item-repr ", ")))
 
-  (defun item-names (table)
-    (let ((item-repr))
-      (maphash
-       (lambda (id amount)
-	 (let ((name (tmwchat-item-name id t)))
-	   (push
-	    (if (> amount 1)
-		(format "%d %s" amount name)
-	      name)
-	    item-repr)))
-       table)
-      (mapconcat 'identity item-repr ", ")))
 
-  (let ((gave-repr (or (item-names gave) "nothing"))
-	(received-repr (or (item-names received) "nothing")))
-    (tmwchat-log "[TRADE] %s <==> %s" gave-repr received-repr)))
+(defun tmwchat-show-successful-trade (with gave received)
+  "Echo info about successful trade in log."
+  (defun str-or (s1 s2)
+    (if (> (length s1) 0)
+	s1
+      s2))
+  (let ((gave-repr (str-or (tmwchat--item-names gave) "nothing"))
+	(received-repr (str-or (tmwchat--item-names received) "nothing")))
+    (tmwchat-log "[TRADE:%s] %s <==> %s" with gave-repr received-repr)))
+
+(defun tmwchat-trade-notify-admins (with gave received)
+  "Whisper to online admins about successful trade."
+  (defun str-or (s1 s2)
+    (if (> (length s1) 0)
+	s1
+      s2))
+  (let ((gave-repr (str-or (tmwchat--item-names gave) "nothing"))
+	(received-repr (str-or (tmwchat--item-names received) "nothing"))
+	(onl (tmwchat-get-online-users))
+	(tmwchat-delay-between-messages 4))
+    (dolist (p tmwchat-shop-admins)
+      (when (member p onl)
+	(whisper-message
+	 p
+	 (format "[TRADE:%s] %s <==> %s" with gave-repr received-repr)
+	 t)))))
 
 (provide 'tmwchat-trade)
