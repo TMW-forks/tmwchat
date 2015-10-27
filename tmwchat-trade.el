@@ -244,6 +244,7 @@ Each function receives 2 hashtables: items gave and received."
 	 (format "Transferring %d GP." tmwchat--trade-shop-should-pay)
 	 t)
 	(tmwchat-trade-add-item 0 tmwchat--trade-shop-should-pay)
+	(puthash 0 tmwchat--trade-shop-should-pay tmwchat--trade-give-ids)
 	(tmwchat-trade-log "I add %d GP." tmwchat--trade-shop-should-pay)
 	(tmwchat-trade-add-complete))
        (t
