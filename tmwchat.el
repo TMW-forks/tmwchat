@@ -92,10 +92,12 @@
   :group 'tmwchat
   :type '(repeat integer))
 
-(defcustom tmwchat-auto-equip-interval 15
-  "Interval betwee auto-equipping next item from `tmwchat-auto-equip-item-ids' list"
+(defcustom tmwchat-auto-equip-interval nil
+  "Interval betwee auto-equipping next item from `tmwchat-auto-equip-item-ids' list.
+Set it to nil if you want to disable this feature."
   :group 'tmwchat
-  :type 'integer)
+  :type '(choice (const :tag "Off" nil)
+		 (integer :tag "Seconds")))
 
 (defcustom tmwchat-blocked-players nil
   "Blocked players list"
