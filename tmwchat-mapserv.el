@@ -3,7 +3,11 @@
 (require 'tmwchat-util)
 (require 'tmwchat-trade)
 
-(defconst tmwchat-delay-between-messages 1.5)
+(defcustom tmwchat-delay-between-messages 2.5
+  "Delay before outgoing messages.
+Useful for not being auto-banned for chat spam."
+  :group 'tmwchat
+  :type 'integer)
 
 (defconst tmwchat--mapserv-packets
   '((#x08a  27 being-action)
