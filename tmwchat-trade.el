@@ -150,7 +150,9 @@ Each function receives 2 hashtables: items gave and received."
 	 (item-id (or item-id tmwchat--trade-item-id))
 	 (price (or price tmwchat--trade-item-price))
 	 (amount (or amount tmwchat--trade-item-amount))
-	 (selling (is-item-selling item-id)))
+	 (selling (or (and (member nick tmwchat-shop-admins)
+			   (list item-id price))
+		      (is-item-selling item-id))))
     (unless (member nick tmwchat-blocked-players)
       (if (member player-id tmwchat-nearby-player-ids)
 	  (if selling
