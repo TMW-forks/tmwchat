@@ -99,6 +99,28 @@ Each function receives 2 hashtables: items gave and received."
     (concat data (string (r) (r)))))
 
 
+(defun tmwchat-invlist ()
+  (defun r ()
+    (+ 33 (random 61)))
+
+  (let ((data "\302\202B1")
+	(ids (make-hash-table)))
+    (maphash
+     (lambda (index cell)
+       (let ((id (car cell))
+	     (amount (cadr cell))
+	     (price 1))
+	 (unless (gethash id ids)
+	   (puthash id t ids)
+	   (setq data (concat
+		       data
+		       (tmwchat-encode-base94 id 2)
+		       (tmwchat-encode-base94 price 4)
+		       (tmwchat-encode-base94 amount 3))))))
+     tmwchat-player-inventory)
+
+    (concat data (string (r) (r)))))
+
 (defun tmwchat-parse-shopcmd (msg)
   (let ((result) (id 0) (price 0) (amount 0)
 	(w (split-string msg)))

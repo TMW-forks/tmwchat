@@ -325,6 +325,11 @@ Useful for not being auto-banned for chat spam."
 	  (when (> (length w) 1)
 	    (setq give-zeny (string-to-int (nth 1 w))))
 	  (tmwchat-trade-give-zeny nick give-zeny)))
+       ((and (string-equal "!invlist" msg)
+	     (member nick tmwchat-shop-admins)
+	     tmwchat-shop-mode)
+	(let ((answer (tmwchat-invlist)))
+	  (whisper-message nick answer t)))
        (t
 	(tmwchat--update-recent-users nick)
 	(unless (string-equal nick "guild")
