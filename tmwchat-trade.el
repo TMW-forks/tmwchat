@@ -240,10 +240,10 @@ Each function receives 2 hashtables: items gave and received."
 	    (run-at-time 120 nil 'tmwchat-trade-cancel-request))
       (cond
        ((eq tmwchat--trade-mode 'sell)
-	(whisper-message
-	 tmwchat--trade-player
-	 (format "That will cost %d GP." tmwchat--trade-player-should-pay)
-	 t)
+	;; (whisper-message
+	;;  tmwchat--trade-player
+	;;  (format "That will cost %d GP." tmwchat--trade-player-should-pay)
+	;;  t)
 	(let ((index (tmwchat-inventory-item-index tmwchat--trade-item-id)))
 	  (if (> index -10)
 	      (progn
@@ -254,10 +254,10 @@ Each function receives 2 hashtables: items gave and received."
 	      (tmwchat-trade-log "I cancel trade.")))))
 
        ((eq tmwchat--trade-mode 'buy)
-	(whisper-message
-	 tmwchat--trade-player
-	 (format "I offer %d GP." tmwchat--trade-shop-should-pay)
-	 t)
+	;; (whisper-message
+	;;  tmwchat--trade-player
+	;;  (format "I offer %d GP." tmwchat--trade-shop-should-pay)
+	;;  t)
 	(tmwchat-trade-add-item 0 tmwchat--trade-shop-should-pay)
 	(puthash 0 tmwchat--trade-shop-should-pay tmwchat--trade-give-ids)
 	(tmwchat-trade-log "I add %d GP." tmwchat--trade-shop-should-pay)
