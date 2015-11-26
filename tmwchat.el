@@ -182,6 +182,18 @@ Set it to nil if you want to disable this feature."
   "Item DB, containing item IDs and names")
 
 
+;; for emacs v24.3 and below
+(when (or (< emacs-major-version 24)
+	  (and (= emacs-major-version 24)
+	       (< emacs-minor-version 4)))
+  (defun string-suffix-p (str1 str2 &optional ignore-case)
+    (let ((begin2 (- (length str2) (length str1)))
+	  (end2 (length str2)))
+      (when (< begin2 0) (setq begin2 0))
+      (eq t (compare-strings str1 nil nil
+			     str2 begin2 end2
+			     ignore-case)))))
+
 ;;===================================================================
 (defun tmwchat--cleanup ()
   (when (timerp tmwchat-ping-mapserv-timer)
