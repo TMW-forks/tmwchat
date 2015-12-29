@@ -1,1 +1,1 @@
-C:\Emacs24\bin\runemacs.exe -l C:\tmwchat\init.el
+C:\Emacs24\bin\runemacs.exe -l C:\tmwchat\winstart.el

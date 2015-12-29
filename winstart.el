@@ -1,4 +1,6 @@
 (require 'cl)
+(cua-mode t)
 (add-to-list 'load-path "C:/tmwchat")
 (require 'tmwchat)
 (setq tmwchat-root-directory "C:/tmwchat")
+;; (tmwchat)
