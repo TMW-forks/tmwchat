@@ -141,7 +141,8 @@
 
 (defcustom todochiku-command 
   (case system-type 
-    (windows-nt "C:/Program Files/full phat/Snarl/tools/heysnarl.exe")
+    (windows-nt (concat (getenv "ProgramFiles")
+			"full phat/Snarl/tools/heysnarl.exe"))
     (darwin "/usr/local/bin/growlnotify")
     (t "notify-send"))
   "Path to command for sending growl-like messages.
