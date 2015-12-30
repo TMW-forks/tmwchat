@@ -57,7 +57,7 @@
 (defun char-map-info (info)
   (setq tmwchat--char-id (bindat-get-field info 'char-id)
 	tmwchat--mapserv-host tmwchat-server-host
-	tmwchat--map-name (bindat-get-field info 'map-name)
+	tmwchat-map-name (bindat-get-field info 'map-name)
 	tmwchat--mapserv-port (bindat-get-field info 'port))
   (delete-process tmwchat--client-process))
 

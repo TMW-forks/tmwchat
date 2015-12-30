@@ -28,7 +28,11 @@ Useful for not being auto-banned for chat spam."
 	    being-move)
     (#x086  ((id         vec 4)
 	     (fill          10))
-	     being-move-2)
+	    being-move-2)
+    (#x087  ((tick       vec 4)
+	     (coor-pair  vec 5)
+	     (fill           1))
+	    walk-response)
     (#x095  ((id         vec 4)
 	     (name  strz 24))
 	    being-name-response)
@@ -380,6 +384,9 @@ Useful for not being auto-banned for chat spam."
 	(x      (bindat-get-field info 'x))
 	(y      (bindat-get-field info 'y)))
     (tmwchat-log "Warped to %s %d,%d" map x y)
+    (setq tmwchat-map-name map
+	  tmwchat-coor-x x
+	  tmwchat-coor-y y)
     (write-u16 #x7d)))
 
 (defun mapserv-connected (info)
@@ -387,11 +394,21 @@ Useful for not being auto-banned for chat spam."
 	(coor (bindat-get-field info 'coor))
 	(x) (y))
     (setq coor (tmwchat-read-coordinates coor))
-    (when tmwchat-debug
-      (tmwchat-log "mapserv-connected  tick=%s map=%s coor=%s"
-		   tick tmwchat--map-name coor))
+    (tmwchat-log "mapserv-connected  tick=%s map=%s coor=%s"
+		 tick tmwchat-map-name coor)
+    (setq tmwchat-coor-x (car coor)
+	  tmwchat-coor-y (cdr coor))
     (tmwchat-log "Type /help <enter> to get infomation about available commands")
     (write-u16 #x7d)))  ;; map-loaded
+
+(defun walk-response (info)
+  (let ((tick (bindat-get-field info 'tick))
+	(coor-pair (bindat-get-field info 'coor-pair)))
+    (setq x1y1x2y2 (tmwchat-read-coordinate-pair coor-pair))
+    (setq tmwchat-coor-x (nth 2 x1y1x2y2)
+	  tmwchat-coor-y (nth 3 x1y1x2y2))
+    (tmwchat-log "Walking to (%d, %d)"
+		 tmwchat-coor-x tmwchat-coor-y)))
 
 ;;=====================================================================
 
@@ -531,6 +548,15 @@ Useful for not being auto-banned for chat spam."
 	   (list (cons 'opcode #x9b)
 		 (cons 'dir dir))))
       (message "Wrong direction: %s" direction))))
+
+;;-------------------------------------------------------------------
+(defun tmwchat-goto (x y)
+  (let ((spec '((opcode       u16r)
+		(coor    vec     3)))
+	(cv (tmwchat-coordinate-to-vector x y)))
+    (tmwchat-send-packet spec
+			 (list (cons 'opcode #x85)
+			       (cons 'coor cv)))))
 
 ;;=====================================================================
 (defun tmwchat--connect-map-server (server port)

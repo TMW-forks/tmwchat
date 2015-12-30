@@ -155,6 +155,8 @@
       "/sit -- Sit down\n"
       "/stand -- Stand up\n"
       "/turn left|right|up|down -- turn in given direction\n"
+      "/goto x y -- go to destination (x, y)\n"
+      "/where -- print current location\n"
       "/inv -- show player inventory\n"
       "/zeny -- show player money\n"
       "/equip ID -- equip item id\n"
@@ -221,6 +223,18 @@
 	   (msg (tmwchat--make-urls (cdr parsed))))
       (setq tmwchat--last-whisper-nick nick)
       (whisper-message nick msg)))
+   ((string-equal "/where" tmwchat-sent)
+    (tmwchat-log "map: %s coor: (%d, %d)"
+		 tmwchat-map-name
+		 tmwchat-coor-x
+		 tmwchat-coor-y))
+   ((string-prefix-p "/goto " tmwchat-sent)
+    (let ((coor (mapcar 'string-to-int
+			(split-string (substring tmwchat-sent 6)))))
+	 (if (< (length coor) 2)
+	     (tmwchat-log "Usage: /goto x y")
+	   (tmwchat-goto (car coor) (cadr coor)))))
+
    ;; ((string-prefix-p "/ " tmwchat-sent)
    ;;  (whisper-message
    ;;   tmwchat--last-whisper-nick

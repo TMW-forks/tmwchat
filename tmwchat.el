@@ -172,8 +172,9 @@ Set it to nil if you want to disable this feature."
 (setq tmwchat--online-list-1 nil)
 (setq tmwchat--online-list-number 0)
 
-(defvar tmwchat--map-name nil
-  "Current map name")
+(defvar tmwchat-coor-x 0 "x coordinate of player")
+(defvar tmwchat-coor-y 0 "y coordinate of player")
+(defvar tmwchat-map-name "" "current map name")
 
 (defvar tmwchat-money 0
   "Money of player")
