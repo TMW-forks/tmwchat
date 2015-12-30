@@ -74,6 +74,8 @@ chatting with your Mana-friends. There are few built-in commands
 /sit -- sit down
 /stand -- stand up
 /turn left|right|up|down -- turn in given direction
+/where -- show current location
+/goto x y -- walk to given coordinates
 /block NickName -- block player (don't receive whispers, public chats, emotes)
 /equip ItemID  -- equip item ID
 /inv -- show inventory
@@ -102,6 +104,7 @@ you want to buy and sell. After this, the following commands will work
                    transfer items and money to the shop. If AMOUNT is omitted,
 		   retrieve all money from shop. This command works only if the
 		   person whispering to shop is set as shop admin in settings.
+!invlist  -- admin command to show all items in inventory, with possibility to retrieve them
 ```
 
 ## Dependencies ##
