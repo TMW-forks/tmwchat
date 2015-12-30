@@ -110,6 +110,12 @@ Set it to nil if you want to disable this feature."
   :type '(choice (const :tag "Off" nil)
 		 (integer :tag "Seconds")))
 
+(defcustom tmwchat-after-connect-hook nil
+  "List of functions to be executed after the player successfully
+logged in and MAP_LOADED packet was sent."
+  :group 'tmwchat
+  :type 'hook)
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "0_o")          (3 . ":-)")

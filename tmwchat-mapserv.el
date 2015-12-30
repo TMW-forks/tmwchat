@@ -399,7 +399,8 @@ Useful for not being auto-banned for chat spam."
     (setq tmwchat-coor-x (car coor)
 	  tmwchat-coor-y (cdr coor))
     (tmwchat-log "Type /help <enter> to get infomation about available commands")
-    (write-u16 #x7d)))  ;; map-loaded
+    (write-u16 #x7d)  ;; map-loaded
+    (run-hooks 'tmwchat-after-connect-hook)))
 
 (defun walk-response (info)
   (let ((tick (bindat-get-field info 'tick))
