@@ -32,6 +32,12 @@ Each function receives 2 hashtables: items gave and received."
   :group 'tmwchat
   :type '(repeat string))
 
+(defcustom tmwchat-shop-gift-ids nil
+  "List of IDs of small gifts (candies, acorns...) that shop
+adds to trade when you buy something."
+  :group 'tmwchat
+  :type '(repeat integer))
+
 (defvar tmwchat--trade-player ""
   "Player you currently trade with")
 (defvar tmwchat--trade-item-id 0)
@@ -226,11 +232,15 @@ Each function receives 2 hashtables: items gave and received."
 			 (list (cons 'opcode #xe6)
 			       (cons 'code 4)))))  ;; reject
 
+(defun list-random-element (lst)
+  (let (len (length lst))
+    (nth (random len) lst)))
+
 (defun trade-response (info)
   (let ((code (bindat-get-field info 'code)))
     (cond
      ((= code 0)
-      (tmwchat-trade-log "Trade response: too far away")
+      (tmwchat-trade-log "Trade response: %s is too far away" tmwchat--trade-player)
       (whisper-message tmwchat--trade-player "You are too far away." t)
       (tmwchat--trade-reset-state))
 
@@ -246,8 +256,13 @@ Each function receives 2 hashtables: items gave and received."
 	;;  t)
 	(let ((index (tmwchat-inventory-item-index tmwchat--trade-item-id)))
 	  (if (> index -10)
-	      (progn
+	      (let ((tmwchat-delay-between-messages 0.1))
 		(tmwchat-trade-add-item index tmwchat--trade-item-amount)
+		(let ((gift-index (tmwchat-inventory-item-index
+				   (list-random-element
+				    tmwchat-shop-gift-ids))))
+		  (when (> gift-index 0)
+		    (tmwchat-trade-add-item gift-index 1)))
 		(tmwchat-trade-add-complete))
 	    (progn
 	      (tmwchat-trade-cancel-request)
@@ -263,10 +278,10 @@ Each function receives 2 hashtables: items gave and received."
 	(tmwchat-trade-log "I add %d GP." tmwchat--trade-shop-should-pay)
 	(tmwchat-trade-add-complete))
        ((eq tmwchat--trade-mode 'money)
-	(whisper-message
-	 tmwchat--trade-player
-	 (format "Transferring %d GP." tmwchat--trade-shop-should-pay)
-	 t)
+	;; (whisper-message
+	;;  tmwchat--trade-player
+	;;  (format "Transferring %d GP." tmwchat--trade-shop-should-pay)
+	;;  t)
 	(tmwchat-trade-add-item 0 tmwchat--trade-shop-should-pay)
 	(puthash 0 tmwchat--trade-shop-should-pay tmwchat--trade-give-ids)
 	(tmwchat-trade-log "I add %d GP." tmwchat--trade-shop-should-pay)
@@ -398,14 +413,14 @@ Each function receives 2 hashtables: items gave and received."
     (tmwchat-trade-log "Trade with %s completed. I transferred %d GP."
 		       tmwchat--trade-player
 		       tmwchat--trade-shop-should-pay)))
-  (run-hook-with-args 'tmwchat-after-trade-hook
-		      tmwchat--trade-player
-		      tmwchat--trade-give-ids
-		      tmwchat--trade-receive-ids)
   (setq tmwchat-money (+ tmwchat-money tmwchat--trade-player-offer))
   (setq tmwchat-money (- tmwchat-money tmwchat--trade-shop-should-pay))
   (when (timerp tmwchat--trade-cancel-timer)
     (cancel-timer tmwchat--trade-cancel-timer))
+  (run-hook-with-args 'tmwchat-after-trade-hook
+		      tmwchat--trade-player
+		      tmwchat--trade-give-ids
+		      tmwchat--trade-receive-ids)
   (tmwchat--trade-reset-state))
 
 (defun tmwchat-trade-add-item (index amount)
@@ -482,7 +497,8 @@ Each function receives 2 hashtables: items gave and received."
       s2))
   (let ((gave-repr (str-or (tmwchat--item-names gave) "nothing"))
 	(received-repr (str-or (tmwchat--item-names received) "nothing")))
-    (tmwchat-log "[TRADE:%s] %s <==> %s" with gave-repr received-repr)))
+    (tmwchat-log "[TRADE:%s] give %s, get %s, zeny %d"
+		 with gave-repr received-repr tmwchat-money)))
 
 (defun tmwchat-trade-notify-admins (with gave received)
   "Whisper to online admins about successful trade."
@@ -498,7 +514,8 @@ Each function receives 2 hashtables: items gave and received."
       (when (member p onl)
 	(whisper-message
 	 p
-	 (format "[TRADE:%s] %s <==> %s" with gave-repr received-repr)
+	 (format "[TRADE:%s] give %s, get %s, zeny %d"
+		 with gave-repr received-repr tmwchat-money)
 	 t)))))
 
 (provide 'tmwchat-trade)
