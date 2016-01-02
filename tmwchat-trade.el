@@ -233,7 +233,7 @@ adds to trade when you buy something."
 			       (cons 'code 4)))))  ;; reject
 
 (defun list-random-element (lst)
-  (let (len (length lst))
+  (let ((len (length lst)))
     (nth (random len) lst)))
 
 (defun trade-response (info)
@@ -256,13 +256,13 @@ adds to trade when you buy something."
 	;;  t)
 	(let ((index (tmwchat-inventory-item-index tmwchat--trade-item-id)))
 	  (if (> index -10)
-	      (let ((tmwchat-delay-between-messages 0.1))
+	      (let ((tmwchat-delay-between-messages 0.1)
+		    (gift-id))
 		(tmwchat-trade-add-item index tmwchat--trade-item-amount)
-		(let ((gift-index (tmwchat-inventory-item-index
-				   (list-random-element
-				    tmwchat-shop-gift-ids))))
-		  (when (> gift-index 0)
-		    (tmwchat-trade-add-item gift-index 1)))
+		(when (setq gift-id (list-random-element tmwchat-shop-gift-ids))
+		  (let ((gift-index (tmwchat-inventory-item-index gift-id)))
+		    (when (> gift-index 0)
+		      (tmwchat-trade-add-item gift-index 1))))
 		(tmwchat-trade-add-complete))
 	    (progn
 	      (tmwchat-trade-cancel-request)
