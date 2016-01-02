@@ -334,6 +334,9 @@ Useful for not being auto-banned for chat spam."
 	     tmwchat-shop-mode)
 	(let ((answer (tmwchat-invlist)))
 	  (whisper-message nick answer t)))
+       ((or (string-equal "!info" msg)
+	    (string-equal "!help" msg))
+	(whisper-message nick tmwchat-info-message t))
        (t
 	(tmwchat--update-recent-users nick)
 	(unless (string-equal nick "guild")

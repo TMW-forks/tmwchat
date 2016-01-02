@@ -116,6 +116,11 @@ logged in and MAP_LOADED packet was sent."
   :group 'tmwchat
   :type 'hook)
 
+(defcustom tmwchat-info-message "[@@https://bitbucket.org/rumly111/tmwchat|TMWchat@@] by Travolta"
+  "info message, standard answer to !help or !info whisper."
+  :group 'tmwchat
+  :type 'string)
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "0_o")          (3 . ":-)")
