@@ -388,16 +388,6 @@ logged in and MAP_LOADED packet was sent."
 	(setq tmwchat--date date)
 	(format-time-string "%D %R")))))
 
-(defun tmwchat-redisplay-player-name (id name)
-  (with-current-buffer tmwchat-buffer-name
-    (save-excursion
-      (let ((inhibit-read-only t)
-	    (old-name (format "{{ID:%s}}" id)))
-	(replace-string old-name name nil (point-min) (point-max))
-	(goto-char (point-max))
-	(beginning-of-line)
-	(setq tmwchat--start-point (point))))))
-
 (defun tmwchat--whisper-to-buffer (nick msg)
   (with-current-buffer (get-buffer-create (concat "TMW: " nick))
     (tmwchat-mode)

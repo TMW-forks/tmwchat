@@ -184,24 +184,38 @@ Useful for not being auto-banned for chat spam."
     (#x7f   4   server-ping)))
 
 (defun being-chat (info)
-  (let* ((id (bindat-get-field info 'id))
-	 (sender (tmwchat-being-name id))
-	 (msg (bindat-get-field info 'msg)))
-    (unless (or (tmwchat--contains-302-202 msg)
-		(member sender tmwchat-blocked-players))
-      (setq msg (tmwchat-decode-string msg))
-      (setq msg (tmwchat--remove-color msg))
-      (when (tmwchat--notify-filter msg)
-	(tmwchat--notify sender msg))
-      (tmwchat-log (format "%s: %s" sender msg))
-      (tmwchat-log-file "#General" (format "%s: %s" sender msg)))))
+  (let ((id (bindat-get-field info 'id))
+	(msg (bindat-get-field info 'msg)))
+
+    (defun process (id msg)
+      (let ((name (gethash id tmwchat-player-names)))
+	(if (not name)
+	    (run-at-time 0.5 nil 'process id msg)
+	  (unless (or (tmwchat--contains-302-202 msg)
+		      (member name tmwchat-blocked-players))
+	    (setq msg (tmwchat-decode-string msg))
+	    (setq msg (tmwchat--remove-color msg))
+	    (when (tmwchat--notify-filter msg)
+	      (tmwchat--notify name msg))
+	    (tmwchat-log (format "%s: %s" name msg))
+	    (tmwchat-log-file "#General" (format "%s: %s" name msg))))))
+
+    (process id msg)))
 
 (defun being-emotion (info)
-  (let ((emote-repr (cdr (assoc (bindat-get-field info 'emote) tmwchat-emotes)))
-	(name (tmwchat-being-name (bindat-get-field info 'id))))
-    (when (and name emote-repr tmwchat-verbose-emotes
-	       (not (member name tmwchat-blocked-players)))
-      (tmwchat-log (format "%s emotes: %s" name emote-repr)))))
+  (let ((emote (bindat-get-field info 'emote))
+	(id (bindat-get-field info 'id)))
+    (setq emote (cdr (assoc emote tmwchat-emotes)))
+
+    (defun process (id emote)
+      (let ((name (gethash id tmwchat-player-names)))
+	(if (not name)
+	    (run-at-time 0.5 nil 'process id emote)
+	  (when (and emote tmwchat-verbose-emotes
+		     (not (member name tmwchat-blocked-players)))
+	    (tmwchat-log (format "%s emotes: %s" name emote))))))
+
+    (process id emote)))
     
 ;; (defun being-move (info)
 ;;   (let ((id (bindat-get-field info 'id))
@@ -219,7 +233,6 @@ Useful for not being auto-banned for chat spam."
     (puthash id name tmwchat-player-names)
     (setq tmwchat--adding-being-ids
 	  (delete id tmwchat--adding-being-ids))
-    (tmwchat-redisplay-player-name id name)
     (setq tmwchat--speedbar-dirty t)))
 
 (defun being-visible (info)
@@ -613,21 +626,5 @@ Useful for not being auto-banned for chat spam."
 
 (defun tmwchat--mapserv-filter-function (process packet)
   (dispatch packet tmwchat--mapserv-packets))
-
-
-;;======================================================================
-;; TODO: should also update being cache if name not on online list
-;; but now online list is buggy, so we skip it
-(defun tmwchat-being-name (id)
-  "return being name by ID"
-  (let ((name (gethash id tmwchat-player-names)))
-    (if name
-	name
-      (let ((name-m (format "{{ID:%s}}" id)))
-	(tmwchat-add-being id 1)
-	name-m))))
-
-(make-variable-buffer-local 'tmwchat-being-name)
-
 
 (provide 'tmwchat-mapserv)
