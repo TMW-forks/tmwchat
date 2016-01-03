@@ -3,7 +3,8 @@
 
 (defun tmwchat-show-beings ()
   (dolist (id tmwchat-nearby-player-ids)
-    (let ((name (tmwchat-being-name id)))
+    (let ((name (gethash id tmwchat-player-names
+			 (format "{ID:%s}" id))))
       (tmwchat-log (format "%s (id:%s)" name id)))))
 
 
