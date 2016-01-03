@@ -10,6 +10,7 @@ import os
 import sys
 from xml.etree.ElementTree import ElementTree
 
+
 def ScanItemsXML(filename):
     result = []
     file1 = ElementTree(file=filename)
@@ -24,6 +25,7 @@ def ScanItemsXML(filename):
                     result.append((id_, name))
     return result
 
+
 def PrintHelp():
     print('Usage: %s <items.xml>'.format(sys.argv[0]))
 
@@ -36,5 +38,5 @@ if __name__ == '__main__':
         for id_, name in ScanItemsXML(filename):
             print(id_, name)
     else:
-        print('File not found:', filename, file=sys.stderr)
+        print('File not found: %s', filename, file=sys.stderr)
         sys.exit(1)
