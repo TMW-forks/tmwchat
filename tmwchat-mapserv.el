@@ -200,6 +200,7 @@ Useful for not being auto-banned for chat spam."
 	    (tmwchat-log (format "%s: %s" name msg))
 	    (tmwchat-log-file "#General" (format "%s: %s" name msg))))))
 
+    (tmwchat-add-being id 1)
     (process id msg)))
 
 (defun being-emotion (info)
@@ -215,6 +216,7 @@ Useful for not being auto-banned for chat spam."
 		     (not (member name tmwchat-blocked-players)))
 	    (tmwchat-log (format "%s emotes: %s" name emote))))))
 
+    (tmwchat-add-being id 1)
     (process id emote)))
     
 ;; (defun being-move (info)
