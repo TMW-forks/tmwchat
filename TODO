@@ -15,6 +15,10 @@
 * tab-completion for commands and nicknames (done for names)
 * guild bot support
 * autoaway
-* migrate to deferred elisp library
+* migrate to deferred elisp library (obsolete)
 * instead of auto-cancel trade requests, show a "hint" message when in shop mode, or simply the sell list (done)
 * refactor: make hook-based system for receiving and sending messages, and processing them
+
+* new sentinel for monitoring disconnection
+* don't spawn infinite url-retrieve processes when internet is gone
+* different sources of online.txt
