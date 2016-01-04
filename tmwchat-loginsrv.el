@@ -19,8 +19,8 @@
     (11 . "Incorrect email.")
     (99 . "Username permanently erased.")))
 
-(defvar tmwchat--reconnect-timer nil
-  "Timer for auto-reconnecting.")
+;(defvar tmwchat--reconnect-timer nil
+;  "Timer for auto-reconnecting.")
 
 (defvar tmwchat--reconnecting nil
   "Whether reconnecting/wait is in process")
@@ -45,6 +45,11 @@
       (setq tmwchat--client-process process)
       (set-process-filter process 'tmwchat--loginsrv-filter-function)
       (set-process-sentinel process 'tmwchat--loginsrv-sentinel-function)
+      (setq tmwchat--packet-sending-timer
+	    (run-at-time
+	     tmwchat--packet-sending-interval
+	     tmwchat--packet-sending-interval
+	     'tmwchat--packet-sending-function))
       (write-u16 #x7530))))  ;; request_version
 
 (defun tmwchat-logoff ()
@@ -118,7 +123,7 @@
 (defun tmwchat--loginsrv-sentinel-function (process event)
   (if (string-equal event "deleted\n")
       (progn
-	(queue-empty tmwchat--outgoing-packets)
+	(queue-clear tmwchat--outgoing-packets)
 	(tmwchat--connect-char-server tmwchat--charserv-host
 				      tmwchat--charserv-port))
     (when tmwchat-auto-reconnect-interval
@@ -127,14 +132,17 @@
 (defun tmwchat-reconnect (&optional delay-seconds)
   (let ((delay-seconds (or delay-seconds 0)))
     (unless tmwchat--reconnecting
-      (setq tmwchat--reconnecting t)
-      (when (timerp tmwchat--reconnect-timer)
-	(cancel-timer tmwchat--reconnect-timer))
+;      (when (timerp tmwchat--reconnect-timer)
+;	(cancel-timer tmwchat--reconnect-timer))
       (message "Reconnecting in %d seconds" delay-seconds)
+      (setq tmwchat--reconnecting t)
+      (cancel-function-timers 'tmwchat-login)
       (tmwchat--cleanup)
-      (setq tmwchat--reconnect-timer
-	    (run-at-time delay-seconds nil
-			 'tmwchat-login tmwchat-server-host
-			 tmwchat-server-port)))))
+      (run-with-timer delay-seconds nil 'tmwchat-login
+		      tmwchat-server-host tmwchat-server-port))))
+;      (setq tmwchat--reconnect-timer
+;	    (run-at-time delay-seconds nil
+;			 'tmwchat-login tmwchat-server-host
+;			 tmwchat-server-port)))))
 
 (provide 'tmwchat-loginsrv)

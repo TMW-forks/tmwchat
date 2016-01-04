@@ -100,7 +100,7 @@
 (defun tmwchat--charserv-sentinel-function (process event)
   (if (string-equal event "deleted\n")
       (progn
-	(queue-empty tmwchat--outgoing-packets)
+	(queue-clear tmwchat--outgoing-packets)
 	(tmwchat--connect-map-server tmwchat--mapserv-host tmwchat--mapserv-port))
     (when tmwchat-auto-reconnect-interval
       (tmwchat-reconnect tmwchat-auto-reconnect-interval))))

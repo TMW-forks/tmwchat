@@ -9,10 +9,15 @@
 (defvar tmwchat--outgoing-packets (make-queue)
   "Queue for outgoing packets.")
 
-(defun tmwchat-send-packet (spec data &optional delay-after)
+(defvar tmwchat--packet-sending-timer nil
+  "Timer for sending packets")
 
-  ;; NOTE: this might work buggy without real semaphore protection
-  (defun consume ()
+(defvar tmwchat--packet-sending-interval 0.1
+  "Interval between invocations of `tmwchat--packet-sending-function'")
+
+(defun tmwchat--packet-sending-function ()
+  "Takes packaets from outgoing queue and sends them to server."
+  (unless (queue-empty tmwchat--outgoing-packets)
     (let* ((q tmwchat--outgoing-packets)
 	   (dd (queue-dequeue q))
 	   (data (cdr dd))
@@ -24,18 +29,14 @@
 	  (error
 	   (message "Error: %S" err)
 	   (when tmwchat-auto-reconnect-interval
-	     (tmwchat-reconnect tmwchat-auto-reconnect-interval))))
-	(when (queue-empty q)
-	  (queue-enqueue q (cons wait nil))))
-      (unless (queue-empty q)
-	(run-at-time wait nil 'consume))))
+	     (tmwchat-reconnect tmwchat-auto-reconnect-interval)))))
+      (timer-inc-time tmwchat--packet-sending-timer wait))))
 
+(defun tmwchat-send-packet (spec data &optional delay-after)
   (let ((bin-data (bindat-pack spec data))
-	(delay-after (or delay-after 0))
-	(empty (queue-empty tmwchat--outgoing-packets)))
+	(delay-after (or delay-after tmwchat--packet-sending-interval)))
     (queue-enqueue tmwchat--outgoing-packets
-		   (cons delay-after bin-data))
-    (when empty (consume))))
+		   (cons delay-after bin-data))))
 
 ;;; unknown request skipping
 (defconst tmwchat--packet-lenghts

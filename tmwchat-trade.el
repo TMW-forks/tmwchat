@@ -48,8 +48,8 @@ adds to trade when you buy something."
 (defvar tmwchat--trade-player-item-amount 0)
 (defvar tmwchat--trade-player-should-pay 0)
 (defvar tmwchat--trade-shop-should-pay 0)
-(defvar tmwchat--trade-cancel-timer nil
-  "Timer to cancel trade if player hesitates too long")
+;;(defvar tmwchat--trade-cancel-timer nil
+;;  "Timer to cancel trade if player hesitates too long")
 (defvar tmwchat--trade-mode nil
   "Trade mode (nil, 'buy, 'sell)")
 (defvar tmwchat--trade-give-ids (make-hash-table :test 'equal))
@@ -246,8 +246,9 @@ adds to trade when you buy something."
 
      ((= code 3)
       (tmwchat-trade-log "Trade from %s accepted." tmwchat--trade-player)
-      (setq tmwchat--trade-cancel-timer
-	    (run-at-time 120 nil 'tmwchat-trade-cancel-request))
+      (run-with-timer 120 nil 'tmwchat-trade-cancel-request)
+;      (setq tmwchat--trade-cancel-timer
+;	    (run-at-time 120 nil 'tmwchat-trade-cancel-request))
       (cond
        ((eq tmwchat--trade-mode 'sell)
 	;; (whisper-message
@@ -361,8 +362,9 @@ adds to trade when you buy something."
 
 (defun trade-cancel (info)
   (tmwchat-trade-log "Trade with %s canceled." tmwchat--trade-player)
-  (when (timerp tmwchat--trade-cancel-timer)
-    (cancel-timer tmwchat--trade-cancel-timer))
+  (cancel-function-timers 'tmwchat-trade-cancel-request)
+;  (when (timerp tmwchat--trade-cancel-timer)
+;    (cancel-timer tmwchat--trade-cancel-timer))
   (tmwchat--trade-reset-state))
 
 (defun trade-ok (info)
@@ -415,8 +417,9 @@ adds to trade when you buy something."
 		       tmwchat--trade-shop-should-pay)))
   (setq tmwchat-money (+ tmwchat-money tmwchat--trade-player-offer))
   (setq tmwchat-money (- tmwchat-money tmwchat--trade-shop-should-pay))
-  (when (timerp tmwchat--trade-cancel-timer)
-    (cancel-timer tmwchat--trade-cancel-timer))
+  (cancel-function-timers 'tmwchat-trade-cancel-request)
+;  (when (timerp tmwchat--trade-cancel-timer)
+;    (cancel-timer tmwchat--trade-cancel-timer))
   (run-hook-with-args 'tmwchat-after-trade-hook
 		      tmwchat--trade-player
 		      tmwchat--trade-give-ids
