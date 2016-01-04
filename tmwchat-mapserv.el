@@ -604,16 +604,9 @@ Useful for not being auto-banned for chat spam."
       (set-process-filter process 'tmwchat--mapserv-filter-function)
       (set-process-sentinel process 'tmwchat--mapserv-sentinel-function)
       (run-with-timer 15 15 'tmwchat-ping-mapserv)
-      ;; (setq tmwchat-ping-mapserv-timer (run-at-time 15 15 'tmwchat-ping-mapserv))
       (when tmwchat-auto-equip-interval
 	(run-with-timer 10 tmwchat-auto-equip-interval 'tmwchat-equip-random-item))
-	;; (setq tmwchat--random-equip-timer
-	;;       (run-at-time 10 tmwchat-auto-equip-interval
-	;; 		   'tmwchat-equip-random-item)))
-      ;; (setq tmwchat--fetch-online-list-timer (run-at-time 5 30 'tmwchat--online-list))
       (run-with-timer 5 30 'tmwchat--online-list)
-      ;; (setq tmwchat-show-status-timer
-      ;; 	    (run-at-time 10 60 'tmwchat-show-status))
       (run-with-timer 10 60 'tmwchat-show-status)
       (tmwchat-send-packet spec
 			   (list (cons 'opcode #x72)

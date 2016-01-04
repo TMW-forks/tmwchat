@@ -19,9 +19,6 @@
     (11 . "Incorrect email.")
     (99 . "Username permanently erased.")))
 
-;(defvar tmwchat--reconnect-timer nil
-;  "Timer for auto-reconnecting.")
-
 (defvar tmwchat--reconnecting nil
   "Whether reconnecting/wait is in process")
 
@@ -41,8 +38,8 @@
     (when (processp process)
       (setq tmwchat--reconnecting nil)
       (tmwchat-log (format "Connected to login server %s:%d" server port))
-      (set-process-coding-system process 'binary 'binary)
       (setq tmwchat--client-process process)
+      (set-process-coding-system process 'binary 'binary)
       (set-process-filter process 'tmwchat--loginsrv-filter-function)
       (set-process-sentinel process 'tmwchat--loginsrv-sentinel-function)
       (setq tmwchat--packet-sending-timer
@@ -132,17 +129,11 @@
 (defun tmwchat-reconnect (&optional delay-seconds)
   (let ((delay-seconds (or delay-seconds 0)))
     (unless tmwchat--reconnecting
-;      (when (timerp tmwchat--reconnect-timer)
-;	(cancel-timer tmwchat--reconnect-timer))
       (message "Reconnecting in %d seconds" delay-seconds)
       (setq tmwchat--reconnecting t)
       (cancel-function-timers 'tmwchat-login)
       (tmwchat--cleanup)
       (run-with-timer delay-seconds nil 'tmwchat-login
 		      tmwchat-server-host tmwchat-server-port))))
-;      (setq tmwchat--reconnect-timer
-;	    (run-at-time delay-seconds nil
-;			 'tmwchat-login tmwchat-server-host
-;			 tmwchat-server-port)))))
 
 (provide 'tmwchat-loginsrv)

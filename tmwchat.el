@@ -157,17 +157,10 @@ logged in and MAP_LOADED packet was sent."
 (defvar tmwchat-party-members (make-hash-table :test 'equal))
 (defvar tmwchat--whisper-target nil)
 (defvar tmwchat--date nil)
-;; (defvar tmwchat--fetch-online-list-timer nil
-;;   "Timer for downloading online.txt")
-;; (defvar tmwchat-ping-mapserv-timer nil
-;;   "Timer for sending PING to mapserv")
-;; (defvar tmwchat--random-equip-timer nil
-;;   "Timer for equipping random item")
 (defvar tmwchat--last-item-equipped 0
   "the ID of last random item that was equipped")
 
 (defvar tmwchat-away nil "User is away if value is t")
-
 (defvar tmwchat--client-process nil)
 
 (defvar tmwchat--adding-being-ids nil
@@ -176,9 +169,6 @@ logged in and MAP_LOADED packet was sent."
 (defconst tmwchat-status-emote #xc0
   "Basic status emote")
 
-;; (defvar tmwchat-show-status-timer nil
-;;   "Timer for showing status emote")
-
 (setq tmwchat--online-list-0 nil)
 (setq tmwchat--online-list-1 nil)
 (setq tmwchat--online-list-number 0)
@@ -186,9 +176,7 @@ logged in and MAP_LOADED packet was sent."
 (defvar tmwchat-coor-x 0 "x coordinate of player")
 (defvar tmwchat-coor-y 0 "y coordinate of player")
 (defvar tmwchat-map-name "" "current map name")
-
-(defvar tmwchat-money 0
-  "Money of player")
+(defvar tmwchat-money 0 "Money of player")
 
 (defvar tmwchat-itemdb (make-hash-table :test 'equal)
   "Item DB, containing item IDs and names")
@@ -208,14 +196,6 @@ logged in and MAP_LOADED packet was sent."
 
 ;;===================================================================
 (defun tmwchat--cleanup ()
-  ;; (when (timerp tmwchat-ping-mapserv-timer)
-  ;;   (cancel-timer tmwchat-ping-mapserv-timer))
-  ;; (when (timerp tmwchat--fetch-online-list-timer)
-  ;;   (cancel-timer tmwchat--fetch-online-list-timer))
-  ;; (when (timerp tmwchat--random-equip-timer)
-  ;;   (cancel-timer tmwchat--random-equip-timer))
-  ;; (when (timerp tmwchat-show-status-timer)
-  ;;   (cancel-timer tmwchat-show-status-timer))
   (when (timerp tmwchat--packet-sending-timer)
     (unless tmwchat--reconnecting
       (cancel-timer tmwchat--packet-sending-timer)))
@@ -451,18 +431,12 @@ logged in and MAP_LOADED packet was sent."
   (interactive)
   (switch-to-buffer tmwchat-buffer-name)
   (tmwchat-mode)
-  ;; (setq debug-on-error t)
   (setq truncate-lines nil)
   (setq tmwchat--frame (selected-frame))
   (setq tmwchat--window (selected-window))
   (tmwchat-read-itemdb
    (concat tmwchat-root-directory "/itemdb.txt")
    tmwchat-itemdb)
-  ;; (setq tmwchat--packet-sending-timer
-  ;; 	(run-at-time
-  ;; 	 tmwchat--packet-sending-interval
-  ;; 	 tmwchat--packet-sending-interval
-  ;; 	 'tmwchat--packet-sending-function))
   (tmwchat-login tmwchat-server-host tmwchat-server-port))
 
 
