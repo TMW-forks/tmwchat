@@ -22,3 +22,4 @@
 * new sentinel for monitoring disconnection
 * don't spawn infinite url-retrieve processes when internet is gone
 * different sources of online.txt
+* more advanced file logging
