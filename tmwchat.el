@@ -234,7 +234,7 @@ logged in and MAP_LOADED packet was sent."
       (setq emote (+ emote 1)))
     (when tmwchat-away
       (setq emote (+ emote 2)))
-    (show-emote emote)))
+    (tmwchat-show-emote emote)))
 
 ;;=================================================================
 (defun tmwchat-insert-url (href label)

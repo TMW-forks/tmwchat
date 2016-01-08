@@ -309,33 +309,33 @@ Useful for not being auto-banned for chat spam."
        ((string-prefix-p "!selllist" msg)
 	(when tmwchat-shop-mode
 	  (let ((answer (tmwchat-selllist)))
-	    (whisper-message nick answer t))))
+	    (tmwchat-whisper-message nick answer t))))
        ((string-prefix-p "!buylist" msg)
 	(when tmwchat-shop-mode
 	  (let ((answer (tmwchat-buylist)))
-	    (whisper-message nick answer t))))
+	    (tmwchat-whisper-message nick answer t))))
        ((string-prefix-p "!buyitem" msg)
 	(when tmwchat-shop-mode
 	  (cond
 	   ((> (length tmwchat--trade-player) 0)
-	    (whisper-message nick
+	    (tmwchat-whisper-message nick
 			     "I am currently trading with someone. Please wait a bit."
 			     t))
 	   ((tmwchat-parse-shopcmd msg)
 	    (tmwchat-sell-to nick))
 	   (t
-	    (whisper-message nick "usage: !buyitem ID PRICE AMOUNT" t)))))
+	    (tmwchat-whisper-message nick "usage: !buyitem ID PRICE AMOUNT" t)))))
        ((string-prefix-p "!sellitem" msg)
 	(when tmwchat-shop-mode
 	  (cond
 	   ((> (length tmwchat--trade-player) 0)
-	    (whisper-message nick
+	    (tmwchat-whisper-message nick
 			     "I am currently trading with someone. Please wait a bit."
 			     t))
 	   ((tmwchat-parse-shopcmd msg)
 	    (tmwchat-buy-from nick))
 	   (t
-	    (whisper-message nick "usage: !sellitem ID PRICE AMOUNT" t)))))
+	    (tmwchat-whisper-message nick "usage: !sellitem ID PRICE AMOUNT" t)))))
        ((and (string-prefix-p "!money" msg)
 	     (member nick tmwchat-shop-admins)
 	     tmwchat-shop-mode)
@@ -348,10 +348,10 @@ Useful for not being auto-banned for chat spam."
 	     (member nick tmwchat-shop-admins)
 	     tmwchat-shop-mode)
 	(let ((answer (tmwchat-invlist)))
-	  (whisper-message nick answer t)))
+	  (tmwchat-whisper-message nick answer t)))
        ((or (string-equal "!info" msg)
 	    (string-equal "!help" msg))
-	(whisper-message nick tmwchat-info-message t))
+	(tmwchat-whisper-message nick tmwchat-info-message t))
        (t
 	(tmwchat--update-recent-users nick)
 	(unless (string-equal nick "guild")
@@ -360,7 +360,7 @@ Useful for not being auto-banned for chat spam."
 	(tmwchat-log-file nick (format "[%s ->] %s" nick msg))
 	(when (and tmwchat-away
 		   (not (string-equal nick "guild")))
-	  (whisper-message nick tmwchat-away-message))
+	  (tmwchat-whisper-message nick tmwchat-away-message))
 	(when tmwchat-whispers-to-buffers
 	  (tmwchat--whisper-to-buffer nick (format "[%s ->] %s" nick msg))))))))
 
@@ -458,16 +458,15 @@ Useful for not being auto-banned for chat spam."
 			     (list (cons 'opcode #x7e)
 				   (cons 'tick   tmwchat--tick)))))))
 
-(defun show-emote (id)
+(defun tmwchat-show-emote (id)
   (let ((spec '((opcode    u16r)
 		(id        u8))))
     ;; (tmwchat-log "You emote: (%s)" (cdr (assoc id tmwchat-emotes)))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #xbf)
 			       (cons 'id id)))))
-(make-variable-buffer-local 'show-emote)
 
-(defun chat-message (msg)
+(defun tmwchat-chat-message (msg)
   (let* ((spec '((opcode      u16r)    ;; #x8c
 		 (len         u16r)
 		 (msg  strz   (eval (- (bindat-get-field struct 'len) 4)))))
@@ -478,9 +477,8 @@ Useful for not being auto-banned for chat spam."
 			       (cons 'len (+ nlen 5))
 			       (cons 'msg nmsg))
 			 tmwchat-delay-between-messages)))
-(make-variable-buffer-local 'chat-message)
 
-(defun whisper-message (nick msg &optional nolog)
+(defun tmwchat-whisper-message (nick msg &optional nolog)
   (let* ((spec  '((opcode       u16r)
 		  (len          u16r)
 		  (nick   strz  24)
@@ -499,7 +497,6 @@ Useful for not being auto-banned for chat spam."
 			       (cons 'nick nick)
 			       (cons 'msg nmsg))
 			 tmwchat-delay-between-messages)))
-(make-variable-buffer-local 'whisper-message)
 
 ;;-------------------------------------------------------------------
 (defun tmwchat-equip-item (id)
@@ -561,7 +558,7 @@ Useful for not being auto-banned for chat spam."
   (let ((dir (cdr (assoc direction tmwchat--directions))))
     (if dir
 	(progn
-	  (tmwchat-log "You turn to %s" direction)
+	  (tmwchat-log "You turn %s" direction)
 	  (tmwchat-send-packet
 	   tmwchat--being-change-dir-spec
 	   (list (cons 'opcode #x9b)

@@ -168,9 +168,9 @@ adds to trade when you buy something."
 		          tmwchat--trade-player-should-pay
 			  (* amount real-price))
 		    (tmwchat-trade-request player-id))
-		(whisper-message nick "I don't have enough." t))
-	    (whisper-message nick "I don't sell that." t))
-	(whisper-message nick "I don't see you nearby." t)))))
+		(tmwchat-whisper-message nick "I don't have enough." t))
+	    (tmwchat-whisper-message nick "I don't sell that." t))
+	(tmwchat-whisper-message nick "I don't see you nearby." t)))))
 
 
 (defun tmwchat-buy-from (nick &optional item-id price amount)
@@ -202,10 +202,10 @@ adds to trade when you buy something."
 				tmwchat--trade-shop-should-pay real-price
 				tmwchat--trade-mode 'buy)
 			  (tmwchat-trade-request player-id))
-		      (whisper-message nick "I can't afford that." t)))
-		(whisper-message nick "I don't need that much." t))
-	    (whisper-message nick "I don't buy that." t))
-	(whisper-message nick "I don't see you nearby." t)))))
+		      (tmwchat-whisper-message nick "I can't afford that." t)))
+		(tmwchat-whisper-message nick "I don't need that much." t))
+	    (tmwchat-whisper-message nick "I don't buy that." t))
+	(tmwchat-whisper-message nick "I don't see you nearby." t)))))
 
 
 (defun tmwchat-trade-give-zeny (nick &optional zeny)
@@ -216,7 +216,7 @@ adds to trade when you buy something."
 		tmwchat--trade-player nick
 		tmwchat--trade-shop-should-pay zeny)
 	  (tmwchat-trade-request player-id))
-      (whisper-message nick "I don't see you nearby." t))))
+      (tmwchat-whisper-message nick "I don't see you nearby." t))))
 
 
 (defun trade-request (info)
@@ -225,7 +225,7 @@ adds to trade when you buy something."
 		  (code         u8))))
     (tmwchat-trade-log "Trade request from %s" nick)
     (when tmwchat-shop-mode
-      (whisper-message nick (tmwchat-selllist) t))
+      (tmwchat-whisper-message nick (tmwchat-selllist) t))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #xe6)
 			       (cons 'code 4)))))  ;; reject
@@ -239,7 +239,7 @@ adds to trade when you buy something."
     (cond
      ((= code 0)
       (tmwchat-trade-log "Trade response: %s is too far away" tmwchat--trade-player)
-      (whisper-message tmwchat--trade-player "You are too far away." t)
+      (tmwchat-whisper-message tmwchat--trade-player "You are too far away." t)
       (tmwchat--trade-reset-state))
 
      ((= code 3)
@@ -247,7 +247,7 @@ adds to trade when you buy something."
       (run-with-timer 120 nil 'tmwchat-trade-cancel-request)
       (cond
        ((eq tmwchat--trade-mode 'sell)
-	;; (whisper-message
+	;; (tmwchat-whisper-message
 	;;  tmwchat--trade-player
 	;;  (format "That will cost %d GP." tmwchat--trade-player-should-pay)
 	;;  t)
@@ -266,7 +266,7 @@ adds to trade when you buy something."
 	      (tmwchat-trade-log "I cancel trade.")))))
 
        ((eq tmwchat--trade-mode 'buy)
-	;; (whisper-message
+	;; (tmwchat-whisper-message
 	;;  tmwchat--trade-player
 	;;  (format "I offer %d GP." tmwchat--trade-shop-should-pay)
 	;;  t)
@@ -275,7 +275,7 @@ adds to trade when you buy something."
 	(tmwchat-trade-log "I add %d GP." tmwchat--trade-shop-should-pay)
 	(tmwchat-trade-add-complete))
        ((eq tmwchat--trade-mode 'money)
-	;; (whisper-message
+	;; (tmwchat-whisper-message
 	;;  tmwchat--trade-player
 	;;  (format "Transferring %d GP." tmwchat--trade-shop-should-pay)
 	;;  t)
@@ -306,14 +306,14 @@ adds to trade when you buy something."
       (incf (gethash id tmwchat--trade-receive-ids 0) amount)
       (cond
        ((eq tmwchat--trade-mode 'sell)
-	(whisper-message tmwchat--trade-player "I accept only GP." t)
+	(tmwchat-whisper-message tmwchat--trade-player "I accept only GP." t)
 	(tmwchat-trade-cancel-request))
        ((eq tmwchat--trade-mode 'buy)
 	(setq tmwchat--trade-player-item-id id
 	      tmwchat--trade-player-item-amount amount)
 	(unless (and (= tmwchat--trade-item-id id)
 		     (= tmwchat--trade-item-amount amount))
-	  (whisper-message
+	  (tmwchat-whisper-message
 	   tmwchat--trade-player
 	   (format "You should give me %d [%s]."
 		   tmwchat--trade-item-amount
@@ -326,7 +326,7 @@ adds to trade when you buy something."
 	(tmwchat-trade-cancel-request))))
      (t
       (tmwchat-trade-log "Trade error.")
-      (whisper-message tmwchat--trade-player "Trade error.")
+      (tmwchat-whisper-message tmwchat--trade-player "Trade error.")
       (tmwchat-trade-cancel-request)))))
 
 (defun trade-item-add-response (info)
@@ -345,15 +345,15 @@ adds to trade when you buy something."
 				       (cons 'amount amount)))))
      ((= code 1)
       (tmwchat-trade-log "%s is overweight" tmwchat--trade-player)
-      (whisper-message tmwchat--trade-player "You seem to be overweight." t)
+      (tmwchat-whisper-message tmwchat--trade-player "You seem to be overweight." t)
       (tmwchat-trade-cancel-request))
      ((= code 2)
       (tmwchat-trade-log "%s has no free slots" tmwchat--trade-player)
-      (whisper-message tmwchat--trade-player "You don't have free slots." t)
+      (tmwchat-whisper-message tmwchat--trade-player "You don't have free slots." t)
       (tmwchat-trade-cancel-request))
      (t
       (tmwchat-trade-log "Unknown trade error.")
-      (whisper-message tmwchat--trade-player "Unknown trade error." t)
+      (tmwchat-whisper-message tmwchat--trade-player "Unknown trade error." t)
       (tmwchat-trade-cancel-request)))))
 
 (defun trade-cancel (info)
@@ -370,14 +370,14 @@ adds to trade when you buy something."
 	(if (>= tmwchat--trade-player-offer tmwchat--trade-player-should-pay)
 	    (tmwchat-trade-ok)
 	  (progn
-	    (whisper-message tmwchat--trade-player "Your offer makes me sad." t)
+	    (tmwchat-whisper-message tmwchat--trade-player "Your offer makes me sad." t)
 	    (tmwchat-trade-cancel-request))))
        ((eq tmwchat--trade-mode 'buy)
 	(if (and (= tmwchat--trade-player-item-id tmwchat--trade-item-id)
 		 (= tmwchat--trade-player-item-amount tmwchat--trade-item-amount))
 	    (tmwchat-trade-ok)
 	  (progn
-	    (whisper-message
+	    (tmwchat-whisper-message
 	     tmwchat--trade-player
 	     (format "You should give me %d %s."
 		     tmwchat--trade-item-amount
@@ -507,7 +507,7 @@ adds to trade when you buy something."
 	(tmwchat-delay-between-messages 4))
     (dolist (p tmwchat-shop-admins)
       (when (member p onl)
-	(whisper-message
+	(tmwchat-whisper-message
 	 p
 	 (format "[TRADE:%s] give %s, get %s, zeny %d"
 		 with gave-repr received-repr tmwchat-money)

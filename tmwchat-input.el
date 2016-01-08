@@ -181,7 +181,7 @@
    ((string-prefix-p "/turn " tmwchat-sent)
     (tmwchat-turn (substring tmwchat-sent 6)))
    ((string-prefix-p "/emote " tmwchat-sent)
-    (show-emote (string-to-int (substring tmwchat-sent 7))))
+    (tmwchat-show-emote (string-to-int (substring tmwchat-sent 7))))
    ((string-equal "/emotes" tmwchat-sent)
     (tmwchat-log (format "%s" tmwchat-emotes)))
    ((string-equal "/mute" tmwchat-sent)
@@ -223,7 +223,7 @@
 	   (nick (car parsed))
 	   (msg (tmwchat--make-urls (cdr parsed))))
       (setq tmwchat--last-whisper-nick nick)
-      (whisper-message nick msg)))
+      (tmwchat-whisper-message nick msg)))
    ((string-equal "/where" tmwchat-sent)
     (tmwchat-log "map: %s coor: (%d, %d)"
 		 tmwchat-map-name
@@ -237,17 +237,17 @@
 	   (tmwchat-goto (car coor) (cadr coor)))))
 
    ;; ((string-prefix-p "/ " tmwchat-sent)
-   ;;  (whisper-message
+   ;;  (tmwchat-whisper-message
    ;;   tmwchat--last-whisper-nick
    ;;   (substring tmwchat-sent 2)))
    ((string-prefix-p "/" tmwchat-sent)
     (tmwchat-log "Unknown command. Type /help to get available commands"))
    (t
     (if tmwchat--whisper-target
-	(whisper-message tmwchat--whisper-target tmwchat-sent)
+	(tmwchat-whisper-message tmwchat--whisper-target tmwchat-sent)
       (progn
 	(setq tmwchat--last-whisper-nick nil)
-	(chat-message (tmwchat--make-urls tmwchat-sent))))))
+	(tmwchat-chat-message (tmwchat--make-urls tmwchat-sent))))))
   (delete-region tmwchat--start-point (point-max))
   ;; (setq tmwchat--start-point (point-max))
   (when tmwchat--last-whisper-nick
