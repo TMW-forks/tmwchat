@@ -1,3 +1,4 @@
+(require 'tmwchat-util)
 (require 'tmwchat-inventory)
 
 (defcustom tmwchat-trade-selling nil
@@ -229,10 +230,6 @@ adds to trade when you buy something."
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #xe6)
 			       (cons 'code 4)))))  ;; reject
-
-(defun list-random-element (lst)
-  (let ((len (length lst)))
-    (nth (random len) lst)))
 
 (defun trade-response (info)
   (let ((code (bindat-get-field info 'code)))

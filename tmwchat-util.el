@@ -141,4 +141,10 @@ When link is non-nil, return [@@id|name@@]"
 	  (format "[@@%d|%s@@]" id name)
 	(format "[%s]" name)))))
 
+(defun list-random-element (lst)
+  "Return random element of list.
+If list is empty, return nil"
+  (let ((len (length lst)))
+    (nth (random len) lst)))
+
 (provide 'tmwchat-util)
