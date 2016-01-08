@@ -121,6 +121,17 @@ logged in and MAP_LOADED packet was sent."
   :group 'tmwchat
   :type 'string)
 
+(defcustom tmwchat-process-whisper-hook '(tmwchat-process-shop-whisper
+					  tmwchat-process-shop-admin-whisper
+					  tmwchat-process-info-whisper)
+  "List of functions to call when a whisper is received.
+Each function receives 2 arguments: nick and message."
+  :group 'tmwchat
+  :options '(tmwchat-process-shop-whisper
+	     tmwchat-process-shop-admin-whisper
+	     tmwchat-process-info-whisper)
+  :type 'hook)
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "0_o")          (3 . ":-)")
@@ -384,6 +395,13 @@ logged in and MAP_LOADED packet was sent."
     ;; if not curr_buffer unread[nick]++
     (insert msg)
     (newline)))
+
+;;====================================================================
+(defun tmwchat-process-info-whisper (nick msg)
+  "Process !info / !help whisper."
+  (when (or (string-equal "!info" msg)
+	    (string-equal "!help" msg))
+    (tmwchat-whisper-message nick tmwchat-info-message t)))
 
 ;;====================================================================
 (defvar tmwchat-mode-map

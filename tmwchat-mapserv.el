@@ -308,52 +308,7 @@ Useful for not being auto-banned for chat spam."
       (setq msg (tmwchat--remove-color
 		 (tmwchat-decode-string msg)))
       (cond
-       ((string-prefix-p "!selllist" msg)
-	(when tmwchat-shop-mode
-	  (let ((answer (tmwchat-selllist)))
-	    (tmwchat-whisper-message nick answer t))))
-       ((string-prefix-p "!buylist" msg)
-	(when tmwchat-shop-mode
-	  (let ((answer (tmwchat-buylist)))
-	    (tmwchat-whisper-message nick answer t))))
-       ((string-prefix-p "!buyitem" msg)
-	(when tmwchat-shop-mode
-	  (cond
-	   ((> (length tmwchat--trade-player) 0)
-	    (tmwchat-whisper-message nick
-			     "I am currently trading with someone. Please wait a bit."
-			     t))
-	   ((tmwchat-parse-shopcmd msg)
-	    (tmwchat-sell-to nick))
-	   (t
-	    (tmwchat-whisper-message nick "usage: !buyitem ID PRICE AMOUNT" t)))))
-       ((string-prefix-p "!sellitem" msg)
-	(when tmwchat-shop-mode
-	  (cond
-	   ((> (length tmwchat--trade-player) 0)
-	    (tmwchat-whisper-message nick
-			     "I am currently trading with someone. Please wait a bit."
-			     t))
-	   ((tmwchat-parse-shopcmd msg)
-	    (tmwchat-buy-from nick))
-	   (t
-	    (tmwchat-whisper-message nick "usage: !sellitem ID PRICE AMOUNT" t)))))
-       ((and (string-prefix-p "!money" msg)
-	     (member nick tmwchat-shop-admins)
-	     tmwchat-shop-mode)
-	(let ((give-zeny)
-	      (w (split-string msg)))
-	  (when (> (length w) 1)
-	    (setq give-zeny (string-to-int (nth 1 w))))
-	  (tmwchat-trade-give-zeny nick give-zeny)))
-       ((and (string-equal "!invlist" msg)
-	     (member nick tmwchat-shop-admins)
-	     tmwchat-shop-mode)
-	(let ((answer (tmwchat-invlist)))
-	  (tmwchat-whisper-message nick answer t)))
-       ((or (string-equal "!info" msg)
-	    (string-equal "!help" msg))
-	(tmwchat-whisper-message nick tmwchat-info-message t))
+       ((run-hook-with-args-until-success 'tmwchat-process-whisper-hook nick msg))
        (t
 	(tmwchat--update-recent-users nick)
 	(unless (string-equal nick "guild")

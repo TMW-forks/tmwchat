@@ -54,6 +54,54 @@ adds to trade when you buy something."
 (defvar tmwchat--trade-give-ids (make-hash-table :test 'equal))
 (defvar tmwchat--trade-receive-ids (make-hash-table :test 'equal))
 
+(defun tmwchat-process-shop-whisper (nick msg)
+  "Process whispers !selllist, !buylist, !sellitem, !buyitem."
+  (when tmwchat-shop-mode
+    (cond
+     ((string-prefix-p "!selllist" msg)
+      (let ((answer (tmwchat-selllist)))
+	(tmwchat-whisper-message nick answer t)))
+     ((string-prefix-p "!buylist" msg)
+      (let ((answer (tmwchat-buylist)))
+	(tmwchat-whisper-message nick answer t)))
+     ((string-prefix-p "!buyitem" msg)
+      (cond
+       ((> (length tmwchat--trade-player) 0)
+	(tmwchat-whisper-message
+	 nick
+	 "I am currently trading with someone. Please wait a bit."
+	 t))
+       ((tmwchat-parse-shopcmd msg)
+	(tmwchat-sell-to nick))
+       (t
+	(tmwchat-whisper-message nick "usage: !buyitem ID PRICE AMOUNT" t))))
+     ((string-prefix-p "!sellitem" msg)
+      (cond
+       ((> (length tmwchat--trade-player) 0)
+	(tmwchat-whisper-message
+	 nick
+	 "I am currently trading with someone. Please wait a bit."
+	 t))
+       ((tmwchat-parse-shopcmd msg)
+	(tmwchat-buy-from nick))
+       (t
+	(tmwchat-whisper-message nick "usage: !sellitem ID PRICE AMOUNT" t)))))))
+
+(defun tmwchat-process-shop-admin-whisper (nick msg)
+  "Process whispers !money and !invlist."
+  (when (and tmwchat-shop-mode
+	     (member nick tmwchat-shop-admins))
+    (cond
+     ((string-prefix-p "!money" msg)
+      (let ((give-zeny)
+	    (w (split-string msg)))
+	(when (> (length w) 1)
+	  (setq give-zeny (string-to-int (nth 1 w))))
+	(tmwchat-trade-give-zeny nick give-zeny)))
+     ((string-equal "!invlist" msg)
+      (let ((answer (tmwchat-invlist)))
+	(tmwchat-whisper-message nick answer t))))))
+
 (defun tmwchat-encode-base94 (value size)
   (let ((output "")
 	(base 94)
