@@ -129,7 +129,8 @@ Each function receives 2 arguments: nick and message."
   :group 'tmwchat
   :options '(tmwchat-process-shop-whisper
 	     tmwchat-process-shop-admin-whisper
-	     tmwchat-process-info-whisper)
+	     tmwchat-process-info-whisper
+	     tmwchat-process-whisper-ignore-shopcmd)
   :type 'hook)
 
 ;;------------------------------------------------------------------
@@ -402,6 +403,11 @@ Each function receives 2 arguments: nick and message."
   (when (or (string-equal "!info" msg)
 	    (string-equal "!help" msg))
     (tmwchat-whisper-message nick tmwchat-info-message t)))
+
+(defun tmwchat-process-whisper-ignore-shopcmd (nick msg)
+  "Ignore the !commands that start with exclamation mark.
+If whisper was processed before, this function is never called."
+  (when (string-prefix-p "!" msg) t))
 
 ;;====================================================================
 (defvar tmwchat-mode-map
