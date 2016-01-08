@@ -190,7 +190,9 @@ Useful for not being auto-banned for chat spam."
     (defun process (id msg)
       (let ((name (gethash id tmwchat-player-names)))
 	(if (not name)
-	    (run-at-time 0.5 nil 'process id msg)
+	    (progn
+	      (tmwchat-add-being id 1)
+	      (run-at-time 0.5 nil 'process id msg))
 	  (unless (or (tmwchat--contains-302-202 msg)
 		      (member name tmwchat-blocked-players))
 	    (setq msg (tmwchat-decode-string msg))
@@ -200,7 +202,6 @@ Useful for not being auto-banned for chat spam."
 	    (tmwchat-log (format "%s: %s" name msg))
 	    (tmwchat-log-file "#General" (format "%s: %s" name msg))))))
 
-    (tmwchat-add-being id 1)
     (process id msg)))
 
 (defun being-emotion (info)
@@ -211,12 +212,13 @@ Useful for not being auto-banned for chat spam."
     (defun process (id emote)
       (let ((name (gethash id tmwchat-player-names)))
 	(if (not name)
-	    (run-at-time 0.5 nil 'process id emote)
+	    (progn
+	      (tmwchat-add-being id 1)
+	      (run-at-time 0.5 nil 'process id emote))
 	  (when (and emote tmwchat-verbose-emotes
 		     (not (member name tmwchat-blocked-players)))
 	    (tmwchat-log (format "%s emotes: %s" name emote))))))
 
-    (tmwchat-add-being id 1)
     (process id emote)))
     
 ;; (defun being-move (info)
