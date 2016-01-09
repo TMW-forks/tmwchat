@@ -5,14 +5,14 @@
   "List of selling items."
   :group 'tmwchat
   :type '(repeat (list :tag "Selling"
-		       (integer :tag "ID")
+		       (integer :tag "ID" :help-echo tmwchat-item-id-help)
 		       (integer :tag "Price"))))
 
 (defcustom tmwchat-trade-buying nil
   "List of item IDs you want to buy."
   :group 'tmwchat
   :type '(repeat (list :tag "Buying"
-		       (integer :tag "ID")
+		       (integer :tag "ID" :help-echo tmwchat-item-id-help)
 		       (integer :tag "Price")
 		       (integer :tag "Max amount"))))
 

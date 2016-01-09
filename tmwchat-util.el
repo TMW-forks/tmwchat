@@ -147,4 +147,12 @@ If list is empty, return nil"
   (let ((len (length lst)))
     (nth (random len) lst)))
 
+(defun tmwchat-item-id-help (widget)
+  "Function should be used as a :help-echo property
+for customization options with item IDs."
+  (let* ((value (widget-value widget))
+	 (id (cond ((stringp value) (string-to-int value))
+		   ((integerp value) value))))
+    (gethash id tmwchat-itemdb "Enter item ID")))
+
 (provide 'tmwchat-util)

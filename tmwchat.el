@@ -90,7 +90,7 @@
 (defcustom tmwchat-auto-equip-item-ids nil
   "List of item IDs to periodically equip"
   :group 'tmwchat
-  :type '(repeat integer))
+  :type '(repeat (integer :tag "ID" :help-echo tmwchat-item-id-help)))
 
 (defcustom tmwchat-auto-equip-interval nil
   "Interval betwee auto-equipping next item from `tmwchat-auto-equip-item-ids' list.
@@ -458,6 +458,9 @@ If whisper was processed before, this function is never called."
   (setq truncate-lines nil)
   (setq tmwchat--frame (selected-frame))
   (setq tmwchat--window (selected-window))
+  (unless (featurep 'help-at-pt)
+    (require 'help-at-pt))
+  (setq help-at-pt-display-when-idle t)
   (tmwchat-read-itemdb
    (concat tmwchat-root-directory "/itemdb.txt")
    tmwchat-itemdb)
