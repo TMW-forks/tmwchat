@@ -32,10 +32,14 @@
   :group 'tmwchat
   :type 'string)
 
+(define-widget 'password 'string
+  "Text entry for entering password."
+  :secret ?*)
+
 (defcustom tmwchat-password ""
   "TMW password. If it's not set, the user will be asked for it"
   :group 'tmwchat
-  :type 'string)
+  :type 'password)
 
 (defcustom tmwchat-charname ""
   "TMW character name"
