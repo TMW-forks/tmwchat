@@ -9,6 +9,7 @@
 (require 'tmwchat-speedbar)
 (require 'tmwchat-input)
 (require 'tmwchat-log)
+(require 'tmwchat-whisper)
 
 ;;------------------------------------------------------------------
 ;; Customizable settings
@@ -134,6 +135,7 @@ Each function receives 2 arguments: nick and message."
   :options '(tmwchat-process-shop-whisper
 	     tmwchat-process-shop-admin-whisper
 	     tmwchat-process-info-whisper
+	     tmwchat-process-command-whisper
 	     tmwchat-process-whisper-ignore-shopcmd)
   :type 'hook)
 
