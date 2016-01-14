@@ -139,6 +139,11 @@ Each function receives 2 arguments: nick and message."
 	     tmwchat-process-whisper-ignore-shopcmd)
   :type 'hook)
 
+(defcustom tmwchat-enable-notifications t
+  "Enable notifications"
+  :group 'tmwchat
+  :type 'boolean)
+
 ;;------------------------------------------------------------------
 (defconst tmwchat-emotes
       '((1 . "Disgust")     (2 . "0_o")          (3 . ":-)")
@@ -309,18 +314,18 @@ Each function receives 2 arguments: nick and message."
     (not (eq (string-match-p regex msg) nil))))
 
 (defun tmwchat--notify (title text)
-  ;; (message (format "frame-visible: %s" (frame-visible-p (selected-frame))))
-  (unless (and (eq (frame-visible-p (selected-frame)) t)
-	       (get-buffer-window (process-buffer
-				   (get-process "tmwchat"))
-				  'visible))
-    (let ((icon (concat (file-name-as-directory tmwchat-root-directory)
-			"Tmw_logo.png"))
-	  (sound (concat (file-name-as-directory tmwchat-root-directory)
-			 "newmessage.wav")))
-      (todochiku-message title text icon tmwchat-sticky-notifications)
-      (when tmwchat-sound
-	(play-sound-file sound)))))
+  (when tmwchat-enable-notifications
+    (unless (and (eq (frame-visible-p (selected-frame)) t)
+		 (get-buffer-window (process-buffer
+				     (get-process "tmwchat"))
+				    'visible))
+      (let ((icon (concat (file-name-as-directory tmwchat-root-directory)
+			  "Tmw_logo.png"))
+	    (sound (concat (file-name-as-directory tmwchat-root-directory)
+			   "newmessage.wav")))
+	(todochiku-message title text icon tmwchat-sticky-notifications)
+	(when tmwchat-sound
+	  (play-sound-file sound))))))
 
 
 ;;====================================================================
