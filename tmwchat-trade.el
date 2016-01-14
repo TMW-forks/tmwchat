@@ -509,6 +509,7 @@ adds to trade when you buy something."
 
 (defun tmwchat-trade-log (&rest args)
   (with-current-buffer (get-buffer-create "TMWChat-trade")
+    (tmwchat-cut-buffer tmwchat-max-log-buffer-size)
     (let ((msg (apply 'format args)))
       (setq msg (format "[%s] %s" (tmwchat-time) msg))
       (goto-char (point-max))

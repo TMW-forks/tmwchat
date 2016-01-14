@@ -5,9 +5,16 @@ If it is empty string, then chat logs are not written to files"
   :group 'tmwchat
   :type 'string)
 
+(defcustom tmwchat-max-log-buffer-size 1000000
+  "Max size of log buffer. After it's reached, the beginning
+of buffer is cut."
+  :group 'tmwchat
+  :type 'integer)
+
 (defun tmwchat--debug-log (msg)
   (when tmwchat-debug
     (with-current-buffer (get-buffer-create "TMWChat-debug")
+      (tmwchat-cut-buffer tmwchat-max-log-buffer-size)
       (goto-char (point-max))
       (insert msg)
       (newline))))
@@ -25,6 +32,23 @@ If it is empty string, then chat logs are not written to files"
       (setq msg (format "[%s] %s" (tmwchat-time) msg))
       (let ((message-log-max nil))
 	(append-to-file msg nil filename)))))
+
+
+(defun tmwchat-cut-buffer (max-size &optional cut-chars)
+  "If the size of buffer is bigger than max-size, remove
+cut-chars from the beginning (or slightly less, to preserve lines.
+If cut-chars isn't specified, it's max-size / 2"
+  (interactive "nSize: ")
+  (when (>= (buffer-size) max-size)
+    (save-excursion
+      (setq cut-chars (or cut-chars (/ max-size 2)))
+      (goto-char (+ (point-min) cut-chars))
+      (goto-char (line-beginning-position))
+      (let ((inhibit-read-only t)
+	    (rollback (- (point) (point-min))))
+	(delete-region (point-min) (point))
+	(when (boundp 'tmwchat--start-point)
+	  (incf tmwchat--start-point (- rollback)))))))
 
 
 (defun tmwchat-log (&rest args)
@@ -49,6 +73,7 @@ If it is empty string, then chat logs are not written to files"
     
   (when (processp (get-process "tmwchat"))
     (with-current-buffer (process-buffer (get-process "tmwchat"))
+      (tmwchat-cut-buffer tmwchat-max-log-buffer-size)
       (if (equal (point) tmwchat--start-point)
 	  (log)
 	(save-excursion
