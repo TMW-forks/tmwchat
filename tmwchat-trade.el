@@ -102,7 +102,7 @@ adds to trade when you buy something."
       (let ((answer (tmwchat-invlist)))
 	(tmwchat-whisper-message nick answer t))))))
 
-(defun tmwchat-encode-base94 (value size)
+(defun encode-base94 (value size)
   (let ((output "")
 	(base 94)
 	(start 33))
@@ -112,6 +112,15 @@ adds to trade when you buy something."
     (while (< (length output) size)
       (setq output (concat output (string start))))
     output))
+
+(make-variable-buffer-local 'encode-base94)
+
+(defun shopitem-encoded (id price amount)
+  (concat (encode-base94 id 2)
+	  (encode-base94 price 4)
+	  (encode-base94 amount 3)))
+
+(make-variable-buffer-local 'shopitem-encoded)
 
 (defun tmwchat-selllist ()
   (defun r ()
@@ -123,11 +132,8 @@ adds to trade when you buy something."
 	     (price (cadr item))
 	     (inv-amount (tmwchat-inventory-item-amount id)))
 	(when (> inv-amount 0)
-	  (setq data (concat
-		      data
-		      (tmwchat-encode-base94 id 2)
-		      (tmwchat-encode-base94 price 4)
-		      (tmwchat-encode-base94 inv-amount 3))))))
+	  (setq data (concat data
+			     (shopitem-encoded id price inv-amount))))))
     (concat data (string (r) (r)))))
 
 (defun tmwchat-buylist ()
@@ -144,11 +150,9 @@ adds to trade when you buy something."
 	      (min (- max-amount inv-amount)
 		   (/ tmwchat-money price))))
 	(when (> can-afford-amount 0)
-	  (setq data (concat
-		      data
-		      (tmwchat-encode-base94 id 2)
-		      (tmwchat-encode-base94 price 4)
-		      (tmwchat-encode-base94 can-afford-amount 3))))))
+	  (setq data
+		(concat data
+			(shopitem-encoded id price can-afford-amount))))))
     (concat data (string (r) (r)))))
 
 
@@ -165,11 +169,9 @@ adds to trade when you buy something."
 	     (price 1))
 	 (unless (gethash id ids)
 	   (puthash id t ids)
-	   (setq data (concat
-		       data
-		       (tmwchat-encode-base94 id 2)
-		       (tmwchat-encode-base94 price 4)
-		       (tmwchat-encode-base94 amount 3))))))
+	   (setq data
+		 (concat data
+			 (shopitem-encoded id price amount))))))
      tmwchat-player-inventory)
 
     (concat data (string (r) (r)))))
