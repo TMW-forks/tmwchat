@@ -89,7 +89,7 @@
 		    tmwchat-password)))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x64)
-			       (cons 'client-ver 201)
+			       (cons 'client-ver 6)
 			       (cons 'username tmwchat-username)
 			       (cons 'password password)
 			       (cons 'flags 3)))))

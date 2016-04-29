@@ -198,8 +198,8 @@ Useful for not being auto-banned for chat spam."
 	    (setq msg (tmwchat--remove-color msg))
 	    (when (tmwchat--notify-filter msg)
 	      (tmwchat--notify name msg))
-	    (tmwchat-log (format "%s: %s" name msg))
-	    (tmwchat-log-file "#General" (format "%s: %s" name msg))))))
+	    (tmwchat-log msg)
+	    (tmwchat-log-file "#General" msg)))))
 
     (process id msg)))
 
@@ -218,7 +218,7 @@ Useful for not being auto-banned for chat spam."
 	    (tmwchat-log (format "%s emotes: %s" name emote))))))
 
     (process id emote)))
-    
+
 ;; (defun being-move (info)
 ;;   (let ((id (bindat-get-field info 'id))
 ;; 	(job (bindat-get-field info 'job)))
@@ -425,7 +425,7 @@ Useful for not being auto-banned for chat spam."
   (let* ((spec '((opcode      u16r)    ;; #x8c
 		 (len         u16r)
 		 (msg  strz   (eval (- (bindat-get-field struct 'len) 4)))))
-	 (nmsg (encode-coding-string (format "%s : %s" tmwchat-charname msg) 'utf-8))
+	 (nmsg (encode-coding-string msg 'utf-8))
 	 (nlen (length nmsg)))
     (tmwchat-send-packet spec
 			 (list (cons 'opcode #x8c)
