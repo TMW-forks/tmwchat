@@ -1,17 +1,25 @@
 
 * Batch mode
-* Support for few "active" commands (/sit, /move etc)
-* Chat logs
-* /debug command for toggling debug information
+* Support for few "active" commands (/sit, /move etc) (done)
+* Chat logs (done, imperfect)
+* /debug command for toggling debug information (done)
 * Speedbar integration (partly done)
-* BUG: Party chat support
-* Ignored users support
+* BUG: Party chat support (done)
+* Ignored users support (done)
 * /away command support (done)
 * Smarter notifications
 * /sound and /mute commands (done)
 * /ping command
-* reconnect when connection is lost
+* reconnect when connection is lost (done)
 * save unread "important" messages to a different buffer
-* tab-completion for commands and nicknames
+* tab-completion for commands and nicknames (done for names)
 * guild bot support
 * autoaway
+* migrate to deferred elisp library (obsolete)
+* instead of auto-cancel trade requests, show a "hint" message when in shop mode, or simply the sell list (done)
+* refactor: make hook-based system for receiving and sending messages, and processing them
+
+* new sentinel for monitoring disconnection
+* don't spawn infinite url-retrieve processes when internet is gone
+* different sources of online.txt
+* more advanced file logging

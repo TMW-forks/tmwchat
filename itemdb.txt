@@ -1,0 +1,880 @@
+501 Cactus Drink
+502 Cactus Potion
+506 Candy Cane
+508 Xmas Cake
+509 Chocolate Bar
+510 Candy
+512 Ginger Bread Man
+513 Cake
+514 Xmas Candy Cane
+519 Cherry Cake
+520 Easter Egg
+527 Milk
+533 Roasted Maggot
+534 Orange Cupcake
+535 Red Apple
+539 Beer
+541 Bottle of Water
+562 Chicken Leg
+565 Pink Petal
+566 Small Mushroom
+567 Iron Potion
+568 Concentration Potion
+657 Orange
+676 Steak
+684 Tiny Healing Potion
+685 Small Healing Potion
+686 Medium Healing Potion
+687 Large Healing Potion
+705 Mana Potion
+714 Snake Egg
+715 Mountain Snake Egg
+716 Grass Snake Egg
+717 Cave Snake Egg
+719 Green Apple
+733 Purification Potion
+736 White Cake
+737 Chocolate Cake
+738 Orange Cake
+739 Apple Cake
+743 Acorn
+744 Diluted Concentration Potion
+745 Dark Concentration Potion
+746 Mopox Cure Potion
+747 Laced Chocolate Cake
+748 Laced Orange Cupcake
+750 Slow Poison Potion
+784 Zombie Nachos
+785 Lady Fingers
+786 Slime Jell-Ahh
+787 Snapple
+788 Beetle Juice
+789 Gut Buster Ale
+790 Blood Wine
+808 Hitchhiker's Towel
+809 White Hitchhiker's Towel
+810 Red Hitchhiker's Towel
+811 Green Hitchhiker's Towel
+812 Blue Hitchhiker's Towel
+813 Yellow Hitchhiker's Towel
+814 Purple Hitchhiker's Towel
+815 Orange Hitchhiker's Towel
+816 Pink Hitchhiker's Towel
+817 Teal Hitchhiker's Towel
+818 Lime Hitchhiker's Towel
+825 Tiny Mana Elixir
+826 Small Mana Elixir
+827 Medium Mana Elixir
+828 Large Mana Elixir
+838 Cranberry Lollipop
+839 Grape Lollipop
+840 Orange Lollipop
+1189 Pollett Egg
+1229 Caramel Apple
+1230 Booberry Blue Lollipop
+1231 Ghastly Green Lollipop
+1232 Blood Red Lollipop
+1248 Blueberries
+1250 Pear
+1251 Plum
+1252 Cherry
+1253 Golden Delicious Apple
+1258 Honey
+1280 Scissors
+1281 Shock Sweet
+3001 Rubber Bat
+3006 Tonori Delight
+3007 Marshmallow
+3009 Jelly Skull
+3010 Candy Pumpkin
+4035 Pickled Beets
+4036 Roasted Acorn
+503 Casino Coins
+504 Decor Candy
+505 Maggot Slime
+507 Scorpion Stinger
+515 Purple Present Box
+516 Blue Present Box
+517 Red Scorpion Stinger
+518 Bug Leg
+526 Coin Bag
+537 Treasure Key
+538 Green Present Box
+540 Empty Bottle
+542 Bottle of Sand
+551 Aqua Hint
+552 Magenta Hint
+553 Yellow Hint
+554 Green Hint
+555 Teal Hint
+556 Purple Hint
+557 Red Hint
+558 Blue Hint
+559 Orange Hint
+560 Gray Hint
+569 Raw Log
+589 Toothbrush
+611 White Fur
+612 Cave Snake Lamp
+613 Hard Spike
+614 Pink Antenna
+631 Dark Crystal
+635 Santa Cookie
+640 Iron Ore
+641 Snake Skin
+660 Cotton Cloth
+661 Red Rose
+662 White Rose
+663 Dark Red Rose
+664 Pink Rose
+665 Yellow Rose
+666 Black Rose
+667 Orange Rose
+668 Blue Rose
+669 Yellow Tulip
+670 Purple Tulip
+671 Red Tulip
+672 White Tulip
+673 Pink Tulip
+674 Orange Tulip
+680 Mauve Herb
+681 Cobalt Herb
+682 Gamboge Herb
+683 Alizarin Herb
+690 Red Dye
+691 Green Dye
+692 Dark Blue Dye
+693 Yellow Dye
+694 Light Blue Dye
+695 Pink Dye
+696 Black Dye
+697 Orange Dye
+698 Purple Dye
+699 Dark Green Dye
+700 Pearl
+701 Pile of Ash
+703 Sulphur Powder
+704 Iron Powder
+706 Golden Scorpion Stinger
+707 Monster Oil Potion
+708 Leather Patch
+709 Black Scorpion Stinger
+710 Snake Tongue
+711 Mountain Snake Tongue
+712 Grass Snake Tongue
+713 Cave Snake Tongue
+718 Silk Cocoon
+727 Iten
+728 Mouboo Figurine
+729 Warped Log
+730 Lifestone
+732 Druid Tree Branch
+740 Root
+753 Bat Wing
+754 Bat Teeth
+763 Terranite Ore
+772 Wisp Powder
+773 Spectre Powder
+774 Poltergeist Powder
+775 Bone
+776 Skull
+777 Rotten Rags
+778 Diseased Heart
+779 Undead Ear
+780 Undead Eye
+799 Mylarin Dust
+802 Easter Basket
+803 Grass Liner
+804 Jelly Beans
+805 Chocolate Mouboo
+806 Reed Bundle
+807 Grass Seeds
+819 Diamond Powder
+820 Ruby Powder
+821 Emerald Powder
+822 Sapphire Powder
+823 Topaz Powder
+824 Amethyst Powder
+833 Broken Four-Leaf Amulet
+834 Broken Doll
+835 Hyvern Stinger
+836 Grub Slime
+841 Red Dotted Wrap
+842 Yellow Dotted Wrap
+843 Blue Dotted Wrap
+844 Purple Striped Wrap
+845 Red Golden Striped Wrap
+846 Green Red Striped Wrap
+847 Plush Mouboo
+849 Open Present Box
+850 Closed Christmas Box
+851 Stick Reinboo
+852 Leather Ball
+853 Doll
+858 Wolvern Tooth
+859 Wolvern Pelt
+860 Squirrel Pelt
+861 White Bell Tuber
+862 Iced Water
+863 Silver Mirror
+864 Book Page
+866 Leather Suitcase
+869 Antlers
+871 Sealed Soul
+872 Lock Picks
+873 Lazurite Shard
+874 Lazurite Crystal
+875 Heart of Lazurite
+891 Silk Sheet
+892 Orange Summon Flower
+893 Purple Summon Flower
+894 White Summon Flower
+895 Yellow Summon Flower
+896 Red Summon Flower
+1191 White Wrap
+1192 Yellow Wrap
+1193 Blue Wrap
+1194 Purple Wrap
+1195 Green Wrap
+1198 Soul
+1207 Red Christmas Stocking
+1208 Red Easter Egg
+1209 Green Easter Egg
+1210 Blue Easter Egg
+1211 Yellow Easter Egg
+1212 Pink Easter Egg
+1213 Teal Easter Egg
+1222 Small Piece of Clay
+1223 Big Piece of White Clay
+1224 Scroll of Paper
+1225 Fire Scroll
+1226 Silver Bell
+1228 Light Crystal
+1233 Cheap Plastic Fangs
+1234 Red Christmas Ornament
+1235 Yellow Christmas Ornament
+1236 Green Christmas Ornament
+1237 Aqua Christmas Ornament
+1238 Blue Christmas Ornament
+1239 Purple Christmas Ornament
+1240 Santa Snow Globe
+1241 Snowman Snow Globe
+1245 Bent Needle
+1246 Dark Easter Egg
+1249 Strange Coin
+1254 Dark Petal
+1257 Flawed Lens
+2250 Red Cotton Cloth
+2251 Green Cotton Cloth
+2252 Dark Blue Cotton Cloth
+2253 Yellow Cotton Cloth
+2254 Light Blue Cotton Cloth
+2255 Pink Cotton Cloth
+2256 Black Cotton Cloth
+2257 Orange Cotton Cloth
+2258 Purple Cotton Cloth
+2259 Dark Green Cotton Cloth
+3000 Jack O Lantern
+3002 Realistic Brain
+3003 Jar of Blood
+3004 Tongue
+3011 Pumpkin Seeds
+4000 Angry Scorpion Stinger
+4001 Coal
+4002 Diamond
+4003 Ruby
+4004 Emerald
+4005 Sapphire
+4006 Topaz
+4007 Amethyst
+4015 Iron Ingot
+4016 Bandit Hood
+4017 Red Powder
+4018 Yellow Powder
+4019 Blue Powder
+4021 Yellow Present Box
+4022 White Present Box
+4023 Animal Bones
+4024 Frozen Yeti Tear
+4025 Yeti Claw
+4026 Ice Cube
+4029 Grimace of Dementia
+4034 Black Pearl
+4037 White Blanket
+4038 White Saddle Rug
+4039 Red Saddle Rug
+4040 Raw Talisman
+4041 Flight Talisman
+5110 Blood Stone
+5111 Brain Stem
+5112 Crypt Key
+5113 Ectoplasm
+5114 Urn
+5115 Vampire Bat Wing
+5116 Wraith Horn
+5117 Astral Cube
+5118 Runestone A
+5119 Runestone L
+5120 Runestone N
+5121 Runestone T
+5122 Runestone W
+5123 Quill of Binding
+5124 Blood Ink
+5125 Underworld Key
+5126 Empty Jar
+5127 Jar of Own Blood
+511 Santa Hat
+524 Fancy Hat
+525 Miner's Hat
+543 Standard Headband
+544 Silk Headband
+615 Pumpkin Helmet
+616 Axe Hat
+617 Pirate Hat
+618 Goggles
+619 Leather Goggles
+620 Circlet
+621 Eyepatch
+622 Bandana
+627 Top Hat
+628 Funky Hat
+629 Mush Hat
+630 Shroom Hat
+633 Christmas Elf Hat
+634 Face Mask
+636 Warlord Helmet
+637 Knight's Helmet
+638 Infantry Helmet
+639 Crusade Helmet
+643 White Cowboy Hat
+644 Black Cowboy Hat
+646 Crown
+647 Developer's Cap
+654 Cap
+656 Serf Hat
+675 Graduation Cap
+678 Noh Mask
+679 Demon Mask
+721 High Priest Crown
+722 Monster Skull Helmet
+723 Desert Hat
+724 Cotton Headband
+725 GM Cap
+735 Cotton Boots
+751 Pinkie Hat
+752 Fluffy Hat
+759 Paladin's Helmet
+760 Overlord's Helmet
+761 Desert Helmet
+764 Sailor Hat
+765 Captain's Hat
+766 Terranite Helmet
+769 Guy Fawkes Mask
+770 Fairy Hat
+781 Witch Doctor's Mask
+795 Bromenal Helmet
+800 Bowler Hat (Brown)
+801 Pinkie Helmet
+848 Earmuffs
+854 Elf Nightcap
+855 Sunglasses
+856 Knit Cap
+877 Bull Helmet
+882 Red Eggshell Hat
+883 Blue Eggshell Hat
+884 Yellow Eggshell Hat
+885 Green Eggshell Hat
+886 Orange Eggshell Hat
+887 Dark Eggshell Hat
+888 Magic GM Top Hat
+889 Murderer Crown
+890 Beanie Copter
+897 Red Rose Hat
+898 White Rose Hat
+899 Pink Rose Hat
+900 Yellow Rose Hat
+901 Orange Rose Hat
+902 Blue Rose Hat
+905 Bucket
+1173 Tam O' Shanter
+1174 Cashiers' Shade
+1175 Autumn Mask
+1190 Nutcracker Hat
+1196 Beret
+1203 Ranger Hat
+1204 Antler Hat
+1205 Christmas Tree Hat
+1206 Santa Beard Hat
+1214 Bunny Ears
+1216 Mouboo Head
+1217 Cat Ears
+1218 Paper Bag
+1219 Moubootaur Head
+1220 Bunch of Parsley
+1221 Skull Mask
+1242 Snow Goggles
+1247 Heart Glasses
+1255 White Rabbit Ears
+1256 Eggshell Hat
+1276 Opera Mask
+1277 Jester Mask
+1278 Witch Hat
+1279 Goblin Mask
+2130 Red Desert Hat
+2131 Green Desert Hat
+2132 Dark Blue Desert Hat
+2133 Yellow Desert Hat
+2134 Light Blue Desert Hat
+2135 Pink Desert Hat
+2136 Black Desert Hat
+2137 Orange Desert Hat
+2138 Purple Desert Hat
+2139 Dark Green Desert Hat
+2140 Red Cotton Headband
+2141 Green Cotton Headband
+2142 Dark Blue Cotton Headband
+2143 Yellow Cotton Headband
+2144 Light Blue Cotton Headband
+2145 Pink Cotton Headband
+2146 Black Cotton Headband
+2147 Orange Cotton Headband
+2148 Purple Cotton Headband
+2149 Dark Green Cotton Headband
+2190 Red Rabbit Ears
+2191 Green Rabbit Ears
+2192 Dark Blue Rabbit Ears
+2193 Yellow Rabbit Ears
+2194 Light Blue Rabbit Ears
+2195 Pink Rabbit Ears
+2196 Black Rabbit Ears
+2197 Orange Rabbit Ears
+2198 Purple Rabbit Ears
+2199 Dark Green Rabbit Ears
+2200 Red Wizard Hat
+2201 Green Wizard Hat
+2202 Dark Blue Wizard Hat
+2203 Yellow Wizard Hat
+2204 Light Blue Wizard Hat
+2205 Pink Wizard Hat
+2206 Black Wizard Hat
+2207 Orange Wizard Hat
+2208 Purple Wizard Hat
+2209 Dark Green Wizard Hat
+2210 Red Bowler Hat
+2211 Green Bowler Hat
+2212 Dark Blue Bowler Hat
+2213 Yellow Bowler Hat
+2214 Light Blue Bowler Hat
+2215 Pink Bowler Hat
+2216 Black Bowler Hat
+2217 Orange Bowler Hat
+2218 Purple Bowler Hat
+2219 Dark Green Bowler Hat
+2230 Red Bowler Hat (Brown)
+2231 Green Bowler Hat (Brown)
+2232 Dark Blue Bowler Hat (Brown)
+2233 Yellow Bowler Hat (Brown)
+2234 Light Blue Bowler Hat (Brown)
+2235 Pink Bowler Hat (Brown)
+2236 Black Bowler Hat (Brown)
+2237 Orange Bowler Hat (Brown)
+2238 Purple Bowler Hat (Brown)
+2239 Dark Green Bowler Hat (Brown)
+2260 Red Beret
+2261 Green Beret
+2262 Dark Blue Beret
+2263 Yellow Beret
+2264 Light Blue Beret
+2265 Pink Beret
+2266 Black Beret
+2267 Orange Beret
+2268 Purple Beret
+2269 Dark Green Beret
+4020 Candle Helmet
+4027 Yeti Mask
+4028 Wizard Hat
+4030 Bowler Hat
+4031 Monocle
+4032 Pan Hat
+4033 Chef Hat
+4042 Rednose
+5128 Dark Helm
+5129 Underworld Mask
+5130 Phylactery
+521 Dagger
+522 Sharp Knife
+536 Short Sword
+549 Axe
+570 Bone Knife
+571 Setzer
+579 Rock Knife
+587 Sword
+591 Long Sword
+599 Fire Sword
+867 Ice Gladius
+1171 Wand
+1201 Knife
+1215 Toy Sabre
+523 Leather Shirt
+546 Desert Shirt
+564 Turtleneck Sweater
+624 V-Neck Sweater
+625 Chainmail Shirt
+626 Light Platemail
+645 Golden Platemail
+649 White Evoker's Robe (Blue)
+650 Black Evoker's Robe (Blue)
+651 White Wizard Robe
+652 Black Wizard Robe
+653 Apprentice Robe
+658 Warlord Plate
+659 Golden Warlord Plate
+688 Tank Top
+689 Short Tank Top
+720 Silk Robe
+726 GM Robe
+731 Assassin Pants
+755 Assassin Shirt
+767 Terranite Chest Armor
+782 Forest Armor
+783 Platyna Red Dress
+791 Yeti Skin Shirt
+793 Bromenal Chest
+798 Sorcerer Robe (Red)
+870 Fine Dress
+880 Lazurite Robe
+1178 Contributor Shirt
+1183 Amber Christmas Sweater
+1184 Funky Christmas Sweater
+1185 Pink Christmas Sweater
+1186 Dark Christmas Sweater
+1187 Blue Christmas Sweater
+1202 Cotton Shirt
+1244 Dark Talisman
+2050 Red Cotton Shirt
+2051 Green Cotton Shirt
+2052 Dark Blue Cotton Shirt
+2053 Yellow Cotton Shirt
+2054 Light Blue Cotton Shirt
+2055 Pink Cotton Shirt
+2056 Black Cotton Shirt
+2057 Orange Cotton Shirt
+2058 Purple Cotton Shirt
+2059 Dark Green Cotton Shirt
+2060 Red V-Neck Sweater
+2061 Green V-Neck Sweater
+2062 Dark Blue V-Neck Sweater
+2063 Yellow V-Neck Sweater
+2064 Light Blue V-Neck Sweater
+2065 Pink V-Neck Sweater
+2066 Black V-Neck Sweater
+2067 Orange V-Neck Sweater
+2068 Purple V-Neck Sweater
+2069 Dark Green V-Neck Sweater
+2070 Red Turtleneck Sweater
+2071 Green Turtleneck Sweater
+2072 Dark Blue Turtleneck Sweater
+2073 Yellow Turtleneck Sweater
+2074 Light Blue Turtleneck Sweater
+2075 Pink Turtleneck Sweater
+2076 Black Turtleneck Sweater
+2077 Orange Turtleneck Sweater
+2078 Purple Turtleneck Sweater
+2079 Dark Green Turtleneck Sweater
+2080 Red Silk Robe
+2081 Green Silk Robe
+2082 Dark Blue Silk Robe
+2083 Yellow Silk Robe
+2084 Light Blue Silk Robe
+2085 Pink Silk Robe
+2086 Black Silk Robe
+2087 Orange Silk Robe
+2088 Purple Silk Robe
+2089 Dark Green Silk Robe
+2090 Red Tank Top
+2091 Green Tank Top
+2092 Dark Blue Tank Top
+2093 Yellow Tank Top
+2094 Light Blue Tank Top
+2095 Pink Tank Top
+2096 Black Tank Top
+2097 Orange Tank Top
+2098 Purple Tank Top
+2099 Dark Green Tank Top
+2120 Red Short Tank Top
+2121 Green Short Tank Top
+2122 Dark Blue Short Tank Top
+2123 Yellow Short Tank Top
+2124 Light Blue Short Tank Top
+2125 Pink Short Tank Top
+2126 Black Short Tank Top
+2127 Orange Short Tank Top
+2128 Purple Short Tank Top
+2129 Dark Green Short Tank Top
+2220 Red Sorcerer Robe (Red)
+2221 Green Sorcerer Robe (Red)
+2222 Dark Blue Sorcerer Robe (Red)
+2223 Yellow Sorcerer Robe (Red)
+2224 Light Blue Sorcerer Robe (Red)
+2225 Pink Sorcerer Robe (Red)
+2226 Black Sorcerer Robe (Red)
+2227 Orange Sorcerer Robe (Red)
+2228 Purple Sorcerer Robe (Red)
+2229 Dark Green Sorcerer Robe (Red)
+2240 Fine Red Dress
+2241 Fine Green Dress
+2242 Fine Dark Blue Dress
+2243 Fine Yellow Dress
+2244 Fine Light Blue Dress
+2245 Fine Pink Dress
+2246 Fine Black Dress
+2247 Fine Orange Dress
+2248 Fine Purple Dress
+2249 Fine Dark Green Dress
+5000 Red Sorcerer Robe (Green)
+5001 Green Sorcerer Robe (Green)
+5002 Dark Blue Sorcerer Robe (Green)
+5003 Yellow Sorcerer Robe (Green)
+5004 Light Blue Sorcerer Robe (Green)
+5005 Pink Sorcerer Robe (Green)
+5006 Black Sorcerer Robe (Green)
+5007 Orange Sorcerer Robe (Green)
+5008 Purple Sorcerer Robe (Green)
+5009 Dark Green Sorcerer Robe (Green)
+5010 Sorcerer Robe (Green)
+5011 Red Sorcerer Robe (Dark Blue)
+5012 Green Sorcerer Robe (Dark Blue)
+5013 Dark Blue Sorcerer Robe (Dark Blue)
+5014 Yellow Sorcerer Robe (Dark Blue)
+5015 Light Blue Sorcerer Robe (Dark Blue)
+5016 Pink Sorcerer Robe (Dark Blue)
+5017 Black Sorcerer Robe (Dark Blue)
+5018 Orange Sorcerer Robe (Dark Blue)
+5019 Purple Sorcerer Robe (Dark Blue)
+5020 Dark Green Sorcerer Robe (Dark Blue)
+5021 Sorcerer Robe (Dark Blue)
+5022 Red Sorcerer Robe (Yellow)
+5023 Green Sorcerer Robe (Yellow)
+5024 Dark Blue Sorcerer Robe (Yellow)
+5025 Yellow Sorcerer Robe (Yellow)
+5026 Light Blue Sorcerer Robe (Yellow)
+5027 Pink Sorcerer Robe (Yellow)
+5028 Black Sorcerer Robe (Yellow)
+5029 Orange Sorcerer Robe (Yellow)
+5030 Purple Sorcerer Robe (Yellow)
+5031 Dark Green Sorcerer Robe (Yellow)
+5032 Sorcerer Robe (Yellow)
+5033 Red Sorcerer Robe (Light Blue)
+5034 Green Sorcerer Robe (Light Blue)
+5035 Dark Blue Sorcerer Robe (Light Blue)
+5036 Yellow Sorcerer Robe (Light Blue)
+5037 Light Blue Sorcerer Robe (Light Blue)
+5038 Pink Sorcerer Robe (Light Blue)
+5039 Black Sorcerer Robe (Light Blue)
+5040 Orange Sorcerer Robe (Light Blue)
+5041 Purple Sorcerer Robe (Light Blue)
+5042 Dark Green Sorcerer Robe (Light Blue)
+5043 Sorcerer Robe (Light Blue)
+5044 Red Sorcerer Robe (Pink)
+5045 Green Sorcerer Robe (Pink)
+5046 Dark Blue Sorcerer Robe (Pink)
+5047 Yellow Sorcerer Robe (Pink)
+5048 Light Blue Sorcerer Robe (Pink)
+5049 Pink Sorcerer Robe (Pink)
+5050 Black Sorcerer Robe (Pink)
+5051 Orange Sorcerer Robe (Pink)
+5052 Purple Sorcerer Robe (Pink)
+5053 Dark Green Sorcerer Robe (Pink)
+5054 Sorcerer Robe (Pink)
+5055 Red Sorcerer Robe (Black)
+5056 Green Sorcerer Robe (Black)
+5057 Dark Blue Sorcerer Robe (Black)
+5058 Yellow Sorcerer Robe (Black)
+5059 Light Blue Sorcerer Robe (Black)
+5060 Pink Sorcerer Robe (Black)
+5061 Black Sorcerer Robe (Black)
+5062 Orange Sorcerer Robe (Black)
+5063 Purple Sorcerer Robe (Black)
+5064 Dark Green Sorcerer Robe (Black)
+5065 Sorcerer Robe (Black)
+5066 Red Sorcerer Robe (Orange)
+5067 Green Sorcerer Robe (Orange)
+5068 Dark Blue Sorcerer Robe (Orange)
+5069 Yellow Sorcerer Robe (Orange)
+5070 Light Blue Sorcerer Robe (Orange)
+5071 Pink Sorcerer Robe (Orange)
+5072 Black Sorcerer Robe (Orange)
+5073 Orange Sorcerer Robe (Orange)
+5074 Purple Sorcerer Robe (Orange)
+5075 Dark Green Sorcerer Robe (Orange)
+5076 Sorcerer Robe (Orange)
+5077 Red Sorcerer Robe (Purple)
+5078 Green Sorcerer Robe (Purple)
+5079 Dark Blue Sorcerer Robe (Purple)
+5080 Yellow Sorcerer Robe (Purple)
+5081 Light Blue Sorcerer Robe (Purple)
+5082 Pink Sorcerer Robe (Purple)
+5083 Black Sorcerer Robe (Purple)
+5084 Orange Sorcerer Robe (Purple)
+5085 Purple Sorcerer Robe (Purple)
+5086 Dark Green Sorcerer Robe (Purple)
+5087 Sorcerer Robe (Purple)
+5088 Red Sorcerer Robe (Dark Green)
+5089 Green Sorcerer Robe (Dark Green)
+5090 Dark Blue Sorcerer Robe (Dark Green)
+5091 Yellow Sorcerer Robe (Dark Green)
+5092 Light Blue Sorcerer Robe (Dark Green)
+5093 Pink Sorcerer Robe (Dark Green)
+5094 Black Sorcerer Robe (Dark Green)
+5095 Orange Sorcerer Robe (Dark Green)
+5096 Purple Sorcerer Robe (Dark Green)
+5097 Dark Green Sorcerer Robe (Dark Green)
+5098 Sorcerer Robe (Dark Green)
+5099 Red Sorcerer Robe (White)
+5100 Green Sorcerer Robe (White)
+5101 Dark Blue Sorcerer Robe (White)
+5102 Yellow Sorcerer Robe (White)
+5103 Light Blue Sorcerer Robe (White)
+5104 Pink Sorcerer Robe (White)
+5105 Black Sorcerer Robe (White)
+5106 Orange Sorcerer Robe (White)
+5107 Purple Sorcerer Robe (White)
+5108 Dark Green Sorcerer Robe (White)
+5109 Sorcerer Robe (White)
+5131 Red Contributor Shirt
+5132 Green Contributor Shirt
+5133 Dark Blue Contributor Shirt
+5134 Yellow Contributor Shirt
+5135 Light Blue Contributor Shirt
+5136 Pink Contributor Shirt
+5137 Black Contributor Shirt
+5138 Orange Contributor Shirt
+5139 Purple Contributor Shirt
+5140 Dark Green Contributor Shirt
+528 Boots
+655 Fur Boots
+734 Black Boots
+757 Assassin Boots
+792 Bromenal Boots
+876 Warlord Boots
+1188 Red Stockings
+2150 Red Cotton Boots
+2151 Green Cotton Boots
+2152 Dark Blue Cotton Boots
+2153 Yellow Cotton Boots
+2154 Light Blue Cotton Boots
+2155 Pink Cotton Boots
+2156 Black Cotton Boots
+2157 Orange Cotton Boots
+2158 Purple Cotton Boots
+2159 Dark Green Cotton Boots
+529 Iron Arrow
+762 Terranite Arrow
+904 Sling Bullet
+1199 Arrow
+1282 Bone Arrows
+530 Short Bow
+545 Forest Bow
+548 Halberd
+588 Bastard Sword
+594 Spear
+595 Heavy Spear
+596 Pike
+597 Heavy Pike
+623 Scythe
+758 Wooden Staff
+878 Banshee Bow
+903 Sling Shot
+906 Kid Book
+1200 Bow
+531 Miner Gloves
+532 Leather Gloves
+563 Winter Gloves
+585 Scarab Armlet
+741 Cotton Gloves
+756 Assassin Gloves
+794 Bromenal Gloves
+868 Silk Gloves
+2160 Red Cotton Gloves
+2161 Green Cotton Gloves
+2162 Dark Blue Cotton Gloves
+2163 Yellow Cotton Gloves
+2164 Light Blue Cotton Gloves
+2165 Pink Cotton Gloves
+2166 Black Cotton Gloves
+2167 Orange Cotton Gloves
+2168 Purple Cotton Gloves
+2169 Dark Green Cotton Gloves
+586 Cotton Shorts
+610 Jeans Shorts
+632 Cotton Skirt
+642 Jeans Chaps
+648 Cotton Trousers
+768 Terranite Legs
+771 Miniskirt
+796 Bromenal Legs
+857 Leather Trousers
+881 Ragged Shorts
+1172 Silk Pants
+2100 Red Cotton Skirt
+2101 Green Cotton Skirt
+2102 Dark Blue Cotton Skirt
+2103 Yellow Cotton Skirt
+2104 Light Blue Cotton Skirt
+2105 Pink Cotton Skirt
+2106 Black Cotton Skirt
+2107 Orange Cotton Skirt
+2108 Purple Cotton Skirt
+2109 Dark Green Cotton Skirt
+2110 Red Cotton Shorts
+2111 Green Cotton Shorts
+2112 Dark Blue Cotton Shorts
+2113 Yellow Cotton Shorts
+2114 Light Blue Cotton Shorts
+2115 Pink Cotton Shorts
+2116 Black Cotton Shorts
+2117 Orange Cotton Shorts
+2118 Purple Cotton Shorts
+2119 Dark Green Cotton Shorts
+2170 Red Miniskirt
+2171 Green Miniskirt
+2172 Dark Blue Miniskirt
+2173 Yellow Miniskirt
+2174 Light Blue Miniskirt
+2175 Pink Miniskirt
+2176 Black Miniskirt
+2177 Orange Miniskirt
+2178 Purple Miniskirt
+2179 Dark Green Miniskirt
+2180 Red Cotton Trousers
+2181 Green Cotton Trousers
+2182 Dark Blue Cotton Trousers
+2183 Yellow Cotton Trousers
+2184 Light Blue Cotton Trousers
+2185 Pink Cotton Trousers
+2186 Black Cotton Trousers
+2187 Orange Cotton Trousers
+2188 Purple Cotton Trousers
+2189 Dark Green Cotton Trousers
+601 Steel Shield
+602 Wooden Shield
+603 Leather Shield
+677 Heart Necklace
+742 Four-Leaf Clover
+749 Towel
+829 Crozenite Four-Leaf Amulet
+830 Bromenal Four-Leaf Amulet
+831 Silver Four-Leaf Amulet
+832 Golden Four-Leaf Amulet
+865 Grimoire
+879 Heart of Isis
+1197 Jack's Skeleton Charm
+1227 Enchanter's Amulet
+702 Wedding Ring
+4008 Diamond Ring
+4009 Ruby Ring
+4010 Emerald Ring
+4011 Sapphire Ring
+4012 Topaz Ring
+4013 Amethyst Ring
+4014 Simple Ring
